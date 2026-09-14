@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360" role="img" aria-label="Agriculture">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3fc2a5"/><stop offset="1" stop-color="#0c8478"/>
+    </linearGradient>
+    <pattern id="p" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 40L40 0" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="480" height="360" fill="url(#g)"/>
+  <rect width="480" height="360" fill="url(#p)"/>
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="translate(180 110)"><path d="M60 100V40"/><path d="M60 50c-15-5-25 0-25 15 15 5 25 0 25-15zM60 60c15-5 25 0 25 15-15 5-25 0-25-15z"/></g>
+  <text x="240" y="290" text-anchor="middle" font-family="Inter, Segoe UI, sans-serif" font-size="22" font-weight="600" fill="#ffffff">Agriculture</text>
+</svg>

@@ -1,0 +1,25 @@
+# Example Nginx reverse/proxy configuration. Adjust paths, PHP socket and domain.
+server {
+    listen 80;
+    server_name example.com www.example.com;
+    root /var/www/isoko-ryacu;
+    index index.php;
+
+    client_max_body_size 64M;
+
+    location / { try_files $uri $uri/ /index.php?$query_string; }
+
+    location ~ \.(?:css|js|jpg|jpeg|png|webp|svg|ico|woff2?)$ {
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800, immutable";
+        try_files $uri =404;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+    }
+
+    location ~ ^/(?:config|includes|lang|sql|scripts|storage)/ { deny all; return 404; }
+    location ~ ^/assets/uploads/.*\.(?:php|phtml|phar)$ { deny all; return 404; }
+}

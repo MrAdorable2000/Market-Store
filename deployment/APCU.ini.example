@@ -1,0 +1,10 @@
+; Optional but recommended for a single-server PHP deployment.
+; For multiple application servers, use Redis for shared caching/rate limiting.
+extension=apcu
+apc.enabled=1
+apc.enable_cli=0
+apc.shm_size=128M
+apc.ttl=300
+apc.gc_ttl=600
+apc.entries_hint=10000
+apc.use_request_time=1
