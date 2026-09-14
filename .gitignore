@@ -18,3 +18,7 @@ test.js
 storage/*.key
 assets/profile_uploads/
 deployment/load-test.js
+
+# Local database backups and config backups
+*.sql
+*.backup
