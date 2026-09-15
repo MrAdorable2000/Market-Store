@@ -100,9 +100,15 @@ for ($i = $daysBack; $i >= 0; $i--) {
 $totalNewListings = array_sum(array_column($series, 'n'));
 
 // New users + new messages within the period (real counts)
-$usersInPeriod   = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL $daysBack DAY)")->fetchColumn();
-$messagesInPeriod= (int) $pdo->query("SELECT COUNT(*) FROM contact_requests WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL $daysBack DAY)")->fetchColumn();
-$rentalsInPeriod = (int) $pdo->query("SELECT COUNT(*) FROM rental_requests WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL $daysBack DAY)")->fetchColumn();
+$usersInPeriodStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+$usersInPeriodStmt->execute([$daysBack]);
+$usersInPeriod = (int) $usersInPeriodStmt->fetchColumn();
+$messagesInPeriodStmt = $pdo->prepare("SELECT COUNT(*) FROM contact_requests WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+$messagesInPeriodStmt->execute([$daysBack]);
+$messagesInPeriod = (int) $messagesInPeriodStmt->fetchColumn();
+$rentalsInPeriodStmt = $pdo->prepare("SELECT COUNT(*) FROM rental_requests WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+$rentalsInPeriodStmt->execute([$daysBack]);
+$rentalsInPeriod = (int) $rentalsInPeriodStmt->fetchColumn();
 
 // Category distribution (active listings only)
 $categories = $pdo->query("SELECT c.id, c.name, c.name_key, COUNT(l.id) listing_count

@@ -29,7 +29,24 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
-header('Access-Control-Allow-Origin: *');
+
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/auth.php';
+
+// SECURITY: this API is session/cookie-authenticated (see includes/auth.php),
+// so it must never send a wildcard Access-Control-Allow-Origin — combined
+// with credentialed requests that is an easy path to cross-site data
+// exposure. Reflect only the app's own origin (browsers already block
+// credentialed cross-origin reads without a matching ACAO, so this simply
+// stops the header from ever claiming to allow everyone).
+$__requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($__requestOrigin !== '' && $__requestOrigin === rtrim(APP_URL, '/')) {
+    header('Access-Control-Allow-Origin: ' . $__requestOrigin);
+    header('Access-Control-Allow-Credentials: true');
+    header('Vary: Origin');
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
 
@@ -37,11 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
-
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/auth.php';
 
 // Parse the path after /api/v1/
 $path  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

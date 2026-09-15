@@ -712,32 +712,11 @@ body.page.dashboard .main { margin: 0 !important; padding: 0 !important; min-hei
 @media(max-width:520px){.community-users-grid{grid-template-columns:1fr}.community-user-card{padding:15px}}
 
 
-/* ================================================================
-   Compact Messenger-style Community People strip
-   ================================================================ */
-.community-users-section--compact{padding-top:22px;padding-bottom:22px;background:transparent;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.community-users-heading--compact{align-items:center;margin-bottom:13px;gap:16px}
-.community-users-heading--compact .community-users-eyebrow{font-size:9px;letter-spacing:.12em;margin-bottom:3px}
-.community-users-heading--compact .community-users-eyebrow__dot{width:6px;height:6px;box-shadow:none}
-.community-users-heading--compact .section__title{font-size:19px;line-height:1.2;margin:0}
-.community-users-view--small{padding:7px 10px;border-radius:9px;font-size:11px;box-shadow:none}
-.community-users-view--small svg{width:14px;height:14px}
-.community-users-grid--compact{display:flex;align-items:flex-start;gap:17px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 5px;scrollbar-width:none}
-.community-users-grid--compact::-webkit-scrollbar{display:none}
-.community-user-mini{position:relative;display:flex;flex-direction:column;align-items:center;flex:0 0 68px;min-width:68px}
-.community-user-mini__link{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;text-decoration:none;color:inherit}
-.community-user-mini__avatar-wrap{position:relative;display:inline-flex;width:48px;height:48px}
-.community-user-mini__avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;display:block;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border)}
-.community-user-mini__avatar--initial{display:grid;place-items:center;background:var(--brand-50);color:var(--brand-700);font-size:16px;font-weight:800}
-.community-user-mini__status{position:absolute;right:-1px;bottom:0;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface)}
-.community-user-mini__status.is-online{background:#22c55e}.community-user-mini__status.is-inactive{background:#a1a1aa}
-.community-user-mini__name{width:100%;font-size:10.5px;font-weight:650;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.community-user-mini__verified{display:inline-grid;place-items:center;width:12px;height:12px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:7px;vertical-align:1px;margin-left:2px}
-.community-user-mini__whatsapp{position:absolute;right:6px;top:34px;display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--surface);color:#16a34a;text-decoration:none;box-shadow:0 1px 5px rgba(0,0,0,.14);border:1px solid rgba(22,163,74,.2)}
-.community-user-mini__whatsapp svg{width:11px;height:11px;fill:currentColor}
-.community-user-mini:hover .community-user-mini__avatar{box-shadow:0 0 0 2px var(--brand-200),0 3px 10px rgba(0,0,0,.08)}
-.community-user-mini:hover .community-user-mini__name{color:var(--brand-700)}
-@media(max-width:600px){.community-users-section--compact{padding-top:18px;padding-bottom:18px}.community-users-heading--compact .section__title{font-size:17px}.community-users-grid--compact{gap:14px}.community-user-mini{flex-basis:62px;min-width:62px}.community-user-mini__avatar-wrap,.community-user-mini__avatar{width:44px;height:44px}.community-user-mini__status{width:11px;height:11px}.community-user-mini__whatsapp{right:3px;top:31px;width:16px;height:16px}.community-user-mini__whatsapp svg{width:10px;height:10px}}
+/* NOTE: an earlier "Compact Messenger-style Community People strip"
+   iteration of this component previously lived here, fully superseded
+   by the "FINAL" rail below (same selectors, later in the cascade).
+   Removed as dead/duplicate CSS — see the FINAL block for the single
+   live definition of .community-users-section--compact and friends. */
 
 /* ================================================================
    FINAL — Messenger / Instagram inspired compact people rail
@@ -1114,14 +1093,55 @@ body.page.dashboard .main { margin: 0 !important; padding: 0 !important; min-hei
 
 /* ================================================================
    HOME COMMUNITY — HALF-WIDTH COMPACT DIRECTORY
-   The left half is reserved for the users directory; the right half
-   remains intentionally open for the next Home page module.
+   Two-column layout: each side (.home-community-column--left/--right)
+   stacks its modules (.community-users-half, .home-youtube-module,
+   .home-calendar-module, .home-updates-module) independently, so
+   neither column's height staggers the other. This is the single
+   canonical definition — do not redeclare .community-users-half-layout
+   or .home-community-column elsewhere (components.css previously had
+   a conflicting duplicate that forced the rules below to fight it
+   with !important; that duplicate has been removed, so !important is
+   no longer needed here).
    ================================================================ */
 .community-users-half-layout{
     display:grid;
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    gap:28px;
+    grid-auto-rows:max-content;
     align-items:start;
+    align-content:start;
+    column-gap:24px;
+    row-gap:16px;
+}
+.community-users-half-layout > .home-community-column{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    align-self:start;
+    justify-content:flex-start;
+    min-width:0;
+    min-height:0;
+    height:auto;
+    gap:16px;
+    margin:0;
+    padding:0;
+}
+.community-users-half-layout > .home-community-column > .community-users-half,
+.community-users-half-layout > .home-community-column > .home-youtube-module,
+.community-users-half-layout > .home-community-column > .home-calendar-module,
+.community-users-half-layout > .home-community-column > .home-updates-module{
+    position:static;
+    flex:none;
+    align-self:stretch;
+    margin-top:0;
+    margin-bottom:0;
+    transform:none;
+}
+@media(max-width:900px){
+    .community-users-half-layout{
+        grid-template-columns:1fr;
+        row-gap:16px;
+    }
+    .community-users-half-layout > .home-community-column{gap:16px}
 }
 .community-users-half{
     min-width:0;
@@ -1162,12 +1182,7 @@ body.page.dashboard .main { margin: 0 !important; padding: 0 !important; min-hei
     width:25px;
     height:25px;
 }
-.community-users-half__reserved{
-    min-height:268px;
-}
 @media(max-width:760px){
-    .community-users-half-layout{grid-template-columns:1fr;gap:0}
-    .community-users-half__reserved{display:none}
     .community-users-half .community-users-panel{height:220px}
 }
 
@@ -1203,10 +1218,6 @@ body.page.dashboard .main { margin: 0 !important; padding: 0 !important; min-hei
 @media (max-width:900px){.home-youtube-module__head{padding:12px 14px 10px}.home-youtube-module__body{padding:10px 14px 13px}}
 
 /* Home: third compact admin-managed community form. */
-.community-users-half-layout>.community-users-half{grid-column:1;grid-row:1}
-.community-users-half-layout>.home-youtube-module{grid-column:2;grid-row:1}
-.community-users-half-layout>.home-calendar-module{grid-column:1;grid-row:2;margin-top:16px}
-.community-users-half-layout>.home-updates-module{grid-column:2;grid-row:2;margin-top:16px}
 .home-calendar-module{min-width:0;margin-top:0;border:1px solid var(--border,#e5e7eb);border-radius:18px;background:var(--surface,#fff);box-shadow:0 8px 28px rgba(16,24,40,.06);overflow:hidden}
 .home-calendar-module__head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px 10px;border-bottom:1px solid #eef2f2}
 .home-calendar-module__eyebrow{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--muted,#64748b)}
@@ -1243,94 +1254,4 @@ body.page.dashboard .main { margin: 0 !important; padding: 0 !important; min-hei
 .home-update-item__body{min-width:0;flex:1}.home-update-item__top{display:flex;align-items:center;justify-content:space-between;gap:8px}.home-update-item__type{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#7b8794}.home-update-item__top time{font-size:8px;color:#8b95a1;white-space:nowrap}
 .home-update-item h4{margin:2px 0 0;font-size:12px;line-height:1.3;color:#18252d}.home-update-item p{margin:3px 0 0;font-size:10px;line-height:1.4;color:#66737e}.home-update-item__location{display:block;margin-top:3px;font-size:9px;color:#73808b}.home-update-item a{display:inline-block;margin-top:4px;font-size:10px;font-weight:700;color:#008f87;text-decoration:none}
 .home-updates-empty{min-height:120px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.home-updates-empty strong{font-size:13px;color:#17212b}.home-updates-empty span{max-width:250px;margin-top:5px;font-size:10px;line-height:1.45;color:#64748b}.home-updates-empty a{margin-top:8px;font-size:10px;font-weight:700;color:#008f87;text-decoration:none}
-@media (max-width:900px){.community-users-half-layout>.community-users-half,.community-users-half-layout>.home-youtube-module,.community-users-half-layout>.home-updates-module,.community-users-half-layout>.home-calendar-module{grid-column:1;grid-row:auto}.home-updates-module,.home-calendar-module{margin-top:0}}
 
-/* HOME — balanced two-column community area: each column flows independently. */
-.community-users-half-layout{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    gap:16px 24px;
-    align-items:start;
-}
-.home-community-column{
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-    align-self:start;
-}
-.home-community-column .home-calendar-module,
-.home-community-column .home-updates-module{
-    margin-top:0;
-}
-@media(max-width:900px){
-    .community-users-half-layout{grid-template-columns:1fr;gap:16px}
-    .home-community-column{gap:16px}
-}
-
-/* HOME — balanced two-column flow. Each side stacks independently, avoiding the large staggered gap. */
-.community-users-half-layout{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    gap:16px 24px;
-    align-items:start;
-}
-.home-community-column{
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-    align-self:start;
-}
-.home-community-column .home-calendar-module,
-.home-community-column .home-updates-module{margin-top:0}
-@media(max-width:900px){
-    .community-users-half-layout{grid-template-columns:1fr;gap:16px}
-    .home-community-column{gap:16px}
-}
-
-/* FINAL HOME COMMUNITY LAYOUT FIX — no vertical staggering between stacked modules. */
-.community-users-half-layout{
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
-    grid-auto-rows:max-content !important;
-    align-items:start !important;
-    align-content:start !important;
-    column-gap:24px !important;
-    row-gap:16px !important;
-}
-.community-users-half-layout > .home-community-column{
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:stretch !important;
-    align-self:start !important;
-    justify-content:flex-start !important;
-    min-width:0 !important;
-    min-height:0 !important;
-    height:auto !important;
-    gap:16px !important;
-    margin:0 !important;
-    padding:0 !important;
-}
-.community-users-half-layout > .home-community-column > .community-users-half,
-.community-users-half-layout > .home-community-column > .home-youtube-module,
-.community-users-half-layout > .home-community-column > .home-calendar-module,
-.community-users-half-layout > .home-community-column > .home-updates-module{
-    position:static !important;
-    flex:none !important;
-    align-self:stretch !important;
-    margin-top:0 !important;
-    margin-bottom:0 !important;
-    transform:none !important;
-}
-.community-users-half-layout > .home-community-column--left > .home-calendar-module,
-.community-users-half-layout > .home-community-column--right > .home-updates-module{
-    margin-top:0 !important;
-}
-@media(max-width:900px){
-    .community-users-half-layout{
-        grid-template-columns:1fr !important;
-        row-gap:16px !important;
-    }
-    .community-users-half-layout > .home-community-column{gap:16px !important;}
-}

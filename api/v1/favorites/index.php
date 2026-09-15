@@ -53,6 +53,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 // --- POST: add OR remove favorite ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF check: accept either the classic form field or the X-CSRF-Token
+    // header the AJAX client (favorites.js) already sends. This closes a gap
+    // where a cross-site form/link could toggle a favorite on behalf of a
+    // logged-in user (the client-side token was being sent but never verified).
+    if (!csrf_check_request()) {
+        if (is_ajax()) {
+            json_response(['error' => t('errors.invalid_token')], 403);
+        } else {
+            flash_set('error', t('errors.invalid_token'));
+            redirect($_SERVER['HTTP_REFERER'] ?? (APP_URL . '/pages/favorites.php'));
+        }
+    }
+
     // Read listing_id from JSON body, URL param, or form
     $data = json_input();
     if (!isset($data['listing_id'])) {

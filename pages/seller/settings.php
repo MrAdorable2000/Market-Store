@@ -453,9 +453,15 @@ require_once __DIR__ . '/../../includes/header.php';
         <h2 style="font-size:15px;font-weight:800;margin:0 0 14px;">Your Seller Stats</h2>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" class="seller-stats-grid">
             <?php
-            $totalListings = (int) $pdo->query("SELECT COUNT(*) FROM listings WHERE seller_id = $uid")->fetchColumn();
-            $totalViews = (int) $pdo->query("SELECT COALESCE(SUM(views_count),0) FROM listings WHERE seller_id = $uid")->fetchColumn();
-            $totalFavs = (int) $pdo->query("SELECT COALESCE(SUM(favorites_count),0) FROM listings WHERE seller_id = $uid")->fetchColumn();
+            $totalListingsStmt = $pdo->prepare("SELECT COUNT(*) FROM listings WHERE seller_id = ?");
+            $totalListingsStmt->execute([$uid]);
+            $totalListings = (int) $totalListingsStmt->fetchColumn();
+            $totalViewsStmt = $pdo->prepare("SELECT COALESCE(SUM(views_count),0) FROM listings WHERE seller_id = ?");
+            $totalViewsStmt->execute([$uid]);
+            $totalViews = (int) $totalViewsStmt->fetchColumn();
+            $totalFavsStmt = $pdo->prepare("SELECT COALESCE(SUM(favorites_count),0) FROM listings WHERE seller_id = ?");
+            $totalFavsStmt->execute([$uid]);
+            $totalFavs = (int) $totalFavsStmt->fetchColumn();
             $ratingAvg = $profile['rating_average'] ?? 0;
             $ratingCount = $profile['rating_count'] ?? 0;
             ?>

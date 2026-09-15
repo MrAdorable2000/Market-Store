@@ -1,0 +1,57 @@
+# ---------------------------------------------------------------------------
+# .dockerignore — Isoko Ryacu
+#
+# SECURITY CRITICAL: the production container's docroot is served by
+# FrankenPHP's built-in static file server. Anything copied into the image
+# that isn't a file the app needs at runtime is potentially downloadable by
+# a visitor (e.g. GET /isoko_ryacu_backup.sql). Everything excluded below
+# either contains secrets/data or simply isn't needed to run the app.
+# ---------------------------------------------------------------------------
+
+# Version control history (full source + past commits, never web-servable)
+.git
+.gitignore
+.dockerignore
+
+# Local database backups and dumps — may contain real user data,
+# password hashes, orders, and messages. Never ship these.
+*.sql
+*.sql.gz
+*.sql.bz2
+isoko_ryacu_backup.sql
+
+# Config/local backups and overrides
+*.backup
+config/local.php
+.env
+.env.*
+
+# Locally generated secrets — production must supply these via env vars
+# (MARKETSTORE_PAYMENT_KEY, ISOKO_DB_*, etc.), never via a baked-in file.
+storage/*.key
+storage/cache/*
+!storage/cache/.gitkeep
+
+# User-uploaded content — stateless container, recreate via object storage
+assets/uploads/*
+!assets/uploads/.gitkeep
+assets/profile_uploads/*
+!assets/profile_uploads/.gitkeep
+
+# Dev/ops tooling not needed to run the web app itself
+deployment/
+scripts/
+sql/
+make_catalog.py
+upgrade_products.py
+test.js
+
+# Docs (not needed at runtime; keep image lean)
+*.md
+
+# Editor/OS cruft
+.vscode/
+.idea/
+.DS_Store
+node_modules/
+*.log

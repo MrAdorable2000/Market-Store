@@ -52,16 +52,24 @@ function render_seller_sidebar(int $uid, $pdo): void
     // Fetch unread counts (safe — wrapped in try/catch)
     $chatUnread = 0; $pendingOrders = 0; $unreadNotif = 0; $myListings = 0;
     try {
-        $chatUnread = (int) $pdo->query("SELECT COUNT(*) FROM messages m INNER JOIN conversations c ON c.id = m.conversation_id WHERE c.user2_id = $uid AND m.sender_id != $uid AND m.is_read = 0")->fetchColumn();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages m INNER JOIN conversations c ON c.id = m.conversation_id WHERE c.user2_id = ? AND m.sender_id != ? AND m.is_read = 0");
+        $stmt->execute([$uid, $uid]);
+        $chatUnread = (int) $stmt->fetchColumn();
     } catch (PDOException $e) {}
     try {
-        $pendingOrders = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE seller_id = $uid AND status IN ('pending','confirmed','preparing','ready','shipped','out_for_delivery')")->fetchColumn();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status IN ('pending','confirmed','preparing','ready','shipped','out_for_delivery')");
+        $stmt->execute([$uid]);
+        $pendingOrders = (int) $stmt->fetchColumn();
     } catch (PDOException $e) {}
     try {
-        $unreadNotif = (int) $pdo->query("SELECT COUNT(*) FROM notifications WHERE user_id = $uid AND is_read = 0")->fetchColumn();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+        $stmt->execute([$uid]);
+        $unreadNotif = (int) $stmt->fetchColumn();
     } catch (PDOException $e) {}
     try {
-        $myListings = (int) $pdo->query("SELECT COUNT(*) FROM listings WHERE seller_id = $uid")->fetchColumn();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM listings WHERE seller_id = ?");
+        $stmt->execute([$uid]);
+        $myListings = (int) $stmt->fetchColumn();
     } catch (PDOException $e) {}
 
     $user = current_user();

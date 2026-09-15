@@ -15,23 +15,29 @@ $uid = (int) current_user()['id'];
 $pdo = db();
 
 // --- Product stats ---
-$myListings  = (int) $pdo->query("SELECT COUNT(*) FROM listings WHERE seller_id = $uid")->fetchColumn();
-$myActive    = (int) $pdo->query("SELECT COUNT(*) FROM listings WHERE seller_id = $uid AND status='active'")->fetchColumn();
-$mySold      = (int) $pdo->query("SELECT COUNT(*) FROM listings WHERE seller_id = $uid AND availability='sold'")->fetchColumn();
-$myViews     = (int) $pdo->query("SELECT COALESCE(SUM(views_count),0) FROM listings WHERE seller_id = $uid")->fetchColumn();
-$myFavorites = (int) $pdo->query("SELECT COALESCE(SUM(favorites_count),0) FROM listings WHERE seller_id = $uid")->fetchColumn();
+function _seller_scalar(PDO $pdo, string $sql, int $uid)
+{
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$uid]);
+    return $stmt->fetchColumn();
+}
+$myListings  = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM listings WHERE seller_id = ?", $uid);
+$myActive    = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM listings WHERE seller_id = ? AND status='active'", $uid);
+$mySold      = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM listings WHERE seller_id = ? AND availability='sold'", $uid);
+$myViews     = (int) _seller_scalar($pdo, "SELECT COALESCE(SUM(views_count),0) FROM listings WHERE seller_id = ?", $uid);
+$myFavorites = (int) _seller_scalar($pdo, "SELECT COALESCE(SUM(favorites_count),0) FROM listings WHERE seller_id = ?", $uid);
 
 // --- Order stats (safe if orders table doesn't exist) ---
 $myOrders = $pendingOrders = $completedOrders = $cancelledOrders = 0;
 $todaySales = $monthSales = $totalSales = 0;
 try {
-    $myOrders = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE seller_id = $uid")->fetchColumn();
-    $pendingOrders = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE seller_id = $uid AND status IN ('pending','confirmed','preparing','ready','shipped','out_for_delivery')")->fetchColumn();
-    $completedOrders = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE seller_id = $uid AND status = 'completed'")->fetchColumn();
-    $cancelledOrders = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE seller_id = $uid AND status = 'cancelled'")->fetchColumn();
-    $todaySales = (float) $pdo->query("SELECT COALESCE(SUM(grand_total),0) FROM orders WHERE seller_id = $uid AND DATE(created_at) = CURDATE() AND status != 'cancelled'")->fetchColumn();
-    $monthSales = (float) $pdo->query("SELECT COALESCE(SUM(grand_total),0) FROM orders WHERE seller_id = $uid AND MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW()) AND status != 'cancelled'")->fetchColumn();
-    $totalSales = (float) $pdo->query("SELECT COALESCE(SUM(grand_total),0) FROM orders WHERE seller_id = $uid AND status = 'completed'")->fetchColumn();
+    $myOrders = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM orders WHERE seller_id = ?", $uid);
+    $pendingOrders = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status IN ('pending','confirmed','preparing','ready','shipped','out_for_delivery')", $uid);
+    $completedOrders = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'completed'", $uid);
+    $cancelledOrders = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'cancelled'", $uid);
+    $todaySales = (float) _seller_scalar($pdo, "SELECT COALESCE(SUM(grand_total),0) FROM orders WHERE seller_id = ? AND DATE(created_at) = CURDATE() AND status != 'cancelled'", $uid);
+    $monthSales = (float) _seller_scalar($pdo, "SELECT COALESCE(SUM(grand_total),0) FROM orders WHERE seller_id = ? AND MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW()) AND status != 'cancelled'", $uid);
+    $totalSales = (float) _seller_scalar($pdo, "SELECT COALESCE(SUM(grand_total),0) FROM orders WHERE seller_id = ? AND status = 'completed'", $uid);
 } catch (PDOException $e) { /* orders table might not exist */ }
 
 // --- Wallet balance ---
@@ -71,11 +77,13 @@ try {
 // --- Unread messages ---
 $chatUnread = 0;
 try {
-    $chatUnread = (int) $pdo->query("SELECT COUNT(*) FROM messages m INNER JOIN conversations c ON c.id = m.conversation_id WHERE c.user2_id = $uid AND m.sender_id != $uid AND m.is_read = 0")->fetchColumn();
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages m INNER JOIN conversations c ON c.id = m.conversation_id WHERE c.user2_id = ? AND m.sender_id != ? AND m.is_read = 0");
+    $stmt->execute([$uid, $uid]);
+    $chatUnread = (int) $stmt->fetchColumn();
 } catch (PDOException $e) {}
 
 // --- Unread notifications ---
-$unreadNotif = (int) $pdo->query("SELECT COUNT(*) FROM notifications WHERE user_id = $uid AND is_read = 0")->fetchColumn();
+$unreadNotif = (int) _seller_scalar($pdo, "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0", $uid);
 
 // --- Recent listings ---
 $stmt = $pdo->prepare('SELECT id, title, price, currency, listing_type, availability, status, views_count, favorites_count, created_at FROM listings WHERE seller_id = ? ORDER BY created_at DESC LIMIT 5');

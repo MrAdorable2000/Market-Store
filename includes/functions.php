@@ -101,6 +101,27 @@ function csrf_check(): bool
 }
 
 /**
+ * Validate a CSRF token submitted either as a classic form field
+ * ($_POST[CSRF_TOKEN_NAME]) OR as the X-CSRF-Token header used by
+ * fetch()-based AJAX endpoints (e.g. favorites, activity heartbeat).
+ * Use this for JSON API endpoints that must accept both a plain HTML
+ * form submission and an AJAX call from the same authenticated UI.
+ */
+function csrf_check_request(): bool
+{
+    start_session();
+    $sessionToken = (string) ($_SESSION[CSRF_TOKEN_NAME] ?? '');
+    if ($sessionToken === '') return false;
+
+    $postToken   = (string) ($_POST[CSRF_TOKEN_NAME] ?? '');
+    $headerToken = (string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+
+    if ($postToken !== '' && hash_equals($sessionToken, $postToken)) return true;
+    if ($headerToken !== '' && hash_equals($sessionToken, $headerToken)) return true;
+    return false;
+}
+
+/**
  * Redirect to a URL and stop execution.
  */
 function redirect(string $url): void

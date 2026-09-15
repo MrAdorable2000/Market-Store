@@ -898,3 +898,48 @@ function reset_password(string $token, string $newPassword): bool
     );
     return $stmt->execute([$hash, $user['id']]);
 }
+
+/**
+ * Production safety net: warn (server log only — never shown to a visitor)
+ * if a well-known demo/seed credential documented in this repository
+ * (sql/seed.sql, sql/install_all.sql) is still present in the users table.
+ * Those hashes and their plaintext passwords are public in source control,
+ * so any account still using one is a live account-takeover risk.
+ *
+ * This never blocks the request and never appears in any HTTP response —
+ * it only writes to the PHP error log so an operator notices it. Throttled
+ * to at most once per hour via the app cache to avoid log spam or extra
+ * DB load on every request.
+ */
+function warn_if_demo_credentials_active(): void
+{
+    if (!defined('APP_ENV') || APP_ENV !== 'production') return;
+    if (!function_exists('app_cache_get') || !function_exists('app_cache_set')) return;
+
+    $cacheKey = 'isoko:demo_cred_check';
+    if (app_cache_get($cacheKey) !== null) return; // checked recently
+    app_cache_set($cacheKey, 1, 3600);
+
+    // Known demo password_hash values documented in plain text in
+    // sql/seed.sql and sql/install_all.sql.
+    $knownDemoHashes = [
+        '$2y$10$up5zrOoUlz6T0i3MvNGtmOYrDD7CP9EVcubl3e5um0MYA2RslC7Pm', // ethiennemugisha35@gmail.com / password
+        '$2y$10$XdY.1jpfSLXwayJRXTYoxu9HkQkkUGqDaaBp.c63km7IOXsJfbxiu', // admin@isoko.rw / Admin@12345
+    ];
+
+    try {
+        $placeholders = implode(',', array_fill(0, count($knownDemoHashes), '?'));
+        $stmt = db()->prepare("SELECT COUNT(*) FROM users WHERE password_hash IN ($placeholders)");
+        $stmt->execute($knownDemoHashes);
+        $count = (int) $stmt->fetchColumn();
+        if ($count > 0) {
+            error_log(
+                "[SECURITY WARNING] {$count} account(s) in production still use a password hash "
+                . "that is documented in plain text in this repository's seed SQL files. "
+                . "Rotate or disable these accounts immediately - the credentials are public."
+            );
+        }
+    } catch (Throwable $e) {
+        // Never let this check break the app.
+    }
+}

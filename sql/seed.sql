@@ -40,6 +40,12 @@ INSERT INTO roles (id, name, description) VALUES
 --     seller@isoko.rw -> Seller@12345
 --     eric.seller@isoko.rw -> Seller@12345
 --     buyer@isoko.rw  -> Buyer@12345
+--
+-- ⚠️  SECURITY — LOCAL DEVELOPMENT / DEMO DATA ONLY:
+-- These are well-known demo credentials documented in plain text in this
+-- repository. NEVER run this seed against a database that will be reachable
+-- from the internet (staging/production) without changing every one of
+-- these passwords first, especially the admin@isoko.rw account.
 INSERT INTO users (id, role_id, full_name, email, password_hash, phone, location, bio, avatar_path, is_verified, is_seller, status) VALUES
 (1, 1, 'Platform Admin',     'admin@isoko.rw',  '$2y$10$XdY.1jpfSLXwayJRXTYoxu9HkQkkUGqDaaBp.c63km7IOXsJfbxiu', '+250 788 000 001', 'Kigali, Rwanda',  'Isoko Ryacu platform administrator.', NULL, 1, 0, 'active'),
 (2, 2, 'Aline Uwase',        'seller@isoko.rw', '$2y$10$IA6zA.PZnRmTRd1ed2Zg.eSP.uBlr8gxli4fBdx35/oewIF6JrlEe', '+250 788 000 002', 'Kigali, Rwanda',  'Trusted seller of vehicles and electronics.', NULL, 1, 1, 'active'),

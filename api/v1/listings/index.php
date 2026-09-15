@@ -1,5 +1,19 @@
 <?php
 /** api/v1/listings/index.php — GET /api/v1/listings, optionally ?id= */
+declare(strict_types=1);
+// Self-contained requires — see api/v1/categories/index.php for why.
+require_once __DIR__ . '/../../../config/config.php';
+require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../includes/functions.php';
+if (!function_exists('json_response')) {
+    function json_response($data, int $code = 200): void {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($code);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+}
+
 $id = (int)($_GET['id'] ?? 0);
 if ($id) {
     $stmt = db()->prepare(

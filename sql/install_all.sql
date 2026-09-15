@@ -933,6 +933,13 @@ INSERT IGNORE INTO roles (id, name, description) VALUES
 -- 2. Create the SUPER_ADMIN account
 --    Email: ethiennemugisha35@gmail.com
 --    Password: password (bcrypt-hashed — never stored as plain text)
+--
+--    ⚠️  SECURITY — LOCAL DEVELOPMENT ONLY:
+--    This is a well-known demo credential documented in plain text in this
+--    repository. NEVER run this seed script against a database that will be
+--    reachable from the internet (staging/production) without immediately
+--    logging in and changing this password, or deleting/disabling this
+--    account first. Anyone who reads this file knows the login.
 -- ----------------------------------------------------------------------------
 INSERT INTO users (id, role_id, full_name, email, password_hash, phone, location, bio, avatar_path, is_verified, is_seller, status)
 VALUES (
