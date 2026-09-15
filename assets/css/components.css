@@ -836,11 +836,17 @@ body.auth .main {
 }
 .searchbar__tab.active { background: var(--brand-600); color: #fff; }
 .searchbar__row { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; }
-.searchbar__input { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+.searchbar__input { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 10px; }
 .searchbar__input svg { color: var(--text-mute); flex-shrink: 0; }
 .searchbar__input input { border: 0; padding: 12px 4px; box-shadow: none; background: transparent; }
+/* The <input>/<select> themselves stay outline:none (their own default
+   focus ring looks clipped inside this compact bar) but the field wrapper
+   now gets a visible ring via :focus-within — losing both meant keyboard
+   users had zero focus indicator anywhere in the site's main search bar. */
 .searchbar__input input:focus { outline: none; box-shadow: none; }
-.searchbar__location { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-left: 1px solid var(--border); }
+.searchbar__input:focus-within,
+.searchbar__location:focus-within { box-shadow: 0 0 0 3px var(--brand-100); }
+.searchbar__location { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-left: 1px solid var(--border); border-radius: 10px; }
 .searchbar__location select { border: 0; padding: 12px 0; background: transparent; font: inherit; color: var(--text); }
 .searchbar__location select:focus { outline: none; box-shadow: none; }
 .searchbar__btn { flex-shrink: 0; }
