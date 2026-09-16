@@ -98,17 +98,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fee = round($amount * 0.01, 2); // 1% withdrawal fee
                 $net = $amount - $fee;
 
-                // Create withdrawal record
-                $pdo->prepare(
-                    'INSERT INTO withdrawals (withdrawal_reference, user_id, wallet_id, amount, fee, net_amount, currency, withdrawal_method_id, status)
-                     VALUES (?, ?, ?, ?, ?, ?, "RWF", ?, "pending")'
-                )->execute([$ref, $uid, $walletId, $amount, $fee, $net, $methodId]);
-                $withdrawalId = (int)$pdo->lastInsertId();
+                // The balance check above reads outside any lock, so it's
+                // only a fast-path/UX check — a second rapid request (e.g.
+                // a double-click) can still race past it. wallet_withdraw()
+                // re-validates atomically under a row lock and throws if
+                // the balance is actually insufficient by then. Without
+                // this try/catch, that exception would leave an orphaned
+                // 'pending' withdrawal row with no corresponding wallet
+                // debit behind it (bad: it looks like a legitimate request
+                // waiting for admin approval, but no funds were ever held).
+                try {
+                    $pdo->beginTransaction();
+                    // Create withdrawal record
+                    $pdo->prepare(
+                        'INSERT INTO withdrawals (withdrawal_reference, user_id, wallet_id, amount, fee, net_amount, currency, withdrawal_method_id, status)
+                         VALUES (?, ?, ?, ?, ?, ?, "RWF", ?, "pending")'
+                    )->execute([$ref, $uid, $walletId, $amount, $fee, $net, $methodId]);
+                    $withdrawalId = (int)$pdo->lastInsertId();
 
-                // Debit wallet atomically
-                wallet_withdraw($uid, $amount, $withdrawalId, 'Withdrawal to ' . ($method['type']==='momo' ? 'Mobile Money' : 'Bank'));
+                    // Debit wallet atomically (participates in this same
+                    // transaction, since wallet_withdraw() only opens its
+                    // own transaction when one isn't already active)
+                    wallet_withdraw($uid, $amount, $withdrawalId, 'Withdrawal to ' . ($method['type']==='momo' ? 'Mobile Money' : 'Bank'));
 
-                flash_set('success', 'Withdrawal request submitted. You will be notified once processed.');
+                    $pdo->commit();
+                    flash_set('success', 'Withdrawal request submitted. You will be notified once processed.');
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) {
+                        try { $pdo->rollBack(); } catch (PDOException $rb) { /* ignore */ }
+                    }
+                    flash_set('error', 'Could not process withdrawal — your balance may have changed. Please refresh and try again.');
+                }
                 break;
         }
         redirect(APP_URL . '/pages/seller/withdrawals.php');
