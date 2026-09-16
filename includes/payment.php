@@ -79,7 +79,19 @@ class WalletPaymentProvider implements PaymentProvider
     public function initiate(int $paymentId, float $amount, string $currency, array $metadata = []): array
     {
         $pdo = db();
-        $pdo->beginTransaction();
+        // NOTE: checkout.php wraps its whole multi-order loop in one outer
+        // transaction and calls initiate() from inside it. PDO does not
+        // support nested transactions, so unconditionally calling
+        // beginTransaction() here throws "There is already an active
+        // transaction" and every wallet checkout fails. Match the safe
+        // pattern already used in wallet.php's _wallet_apply_change(): only
+        // start/commit/roll back the transaction if this call is the one
+        // that opened it.
+        $startedTransaction = false;
+        if (!$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $startedTransaction = true;
+        }
         try {
             // Lock the payment row
             $stmt = $pdo->prepare('SELECT * FROM payments WHERE id = ? FOR UPDATE');
@@ -99,7 +111,7 @@ class WalletPaymentProvider implements PaymentProvider
                 $pdo->prepare(
                     "UPDATE payments SET status = 'failed', failure_reason = 'Insufficient wallet balance', updated_at = NOW() WHERE id = ?"
                 )->execute([$paymentId]);
-                $pdo->commit();
+                if ($startedTransaction) $pdo->commit();
                 return ['status' => 'failed', 'provider_reference' => null, 'error' => 'Insufficient wallet balance'];
             }
 
@@ -129,7 +141,7 @@ class WalletPaymentProvider implements PaymentProvider
                 "UPDATE orders SET status = 'confirmed', delivery_status = 'confirmed', confirmed_at = NOW(), updated_at = NOW() WHERE id = ?"
             )->execute([$orderId]);
 
-            $pdo->commit();
+            if ($startedTransaction) $pdo->commit();
 
             // Notify the seller
             $seller = $pdo->prepare('SELECT seller_id FROM orders WHERE id = ?');
@@ -149,7 +161,11 @@ class WalletPaymentProvider implements PaymentProvider
 
             return ['status' => 'successful', 'provider_reference' => $providerRef];
         } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
+            // Only roll back if this call opened the transaction — if we're
+            // nested inside checkout.php's outer transaction, rolling back
+            // here would resolve it prematurely; let the exception propagate
+            // so the outer caller can roll back the whole checkout atomically.
+            if ($startedTransaction && $pdo->inTransaction()) {
                 try { $pdo->rollBack(); } catch (PDOException $rb) { /* ignore */ }
             }
             throw $e;
@@ -276,7 +292,11 @@ function create_payment(int $orderId, int $userId, float $amount, string $method
 function release_escrow_to_seller(int $orderId, int $buyerId): bool
 {
     $pdo = db();
-    $pdo->beginTransaction();
+    $startedTransaction = false;
+    if (!$pdo->inTransaction()) {
+        $pdo->beginTransaction();
+        $startedTransaction = true;
+    }
     try {
         // Lock the order row
         $stmt = $pdo->prepare('SELECT * FROM orders WHERE id = ? FOR UPDATE');
@@ -317,10 +337,10 @@ function release_escrow_to_seller(int $orderId, int $buyerId): bool
             '/pages/orders.php?view=seller&id=' . $orderId,
         ]);
 
-        $pdo->commit();
+        if ($startedTransaction) $pdo->commit();
         return true;
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
+        if ($startedTransaction && $pdo->inTransaction()) {
             try { $pdo->rollBack(); } catch (PDOException $rb) { /* ignore */ }
         }
         throw $e;

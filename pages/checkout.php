@@ -120,44 +120,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$insufficientBalance) {
                     foreach ($groups as $g) {
                         $sellerId = $g['seller_id'];
-                        $subtotal = $g['subtotal'];
-                        $platformFee = round($subtotal * 0.05, 2); // 5% platform fee
-                        $grandTotal = $subtotal + $deliveryFee + $platformFee;
-                        $orderNumber = generate_order_number();
+                        $platformFee = round($g['subtotal'] * 0.05, 2); // 5% platform fee, on the seller's whole cart subtotal
 
-                        // Use the first item's listing_id (one order = one listing model)
-                        $listingId = (int)$g['items'][0]['listing_id'];
-                        $quantity = (int)$g['items'][0]['quantity'];
-                        $unitPrice = (float)$g['items'][0]['price'];
+                        // IMPORTANT: this schema is one-order-per-listing (orders.listing_id is
+                        // singular, there is no order_items table), but a buyer can have several
+                        // *different* listings from the same seller in their cart at once
+                        // (cart_items has UNIQUE(user_id, listing_id), not per-seller). Previously
+                        // this loop only ever recorded $g['items'][0] while still charging the
+                        // wallet for every item in the group — the buyer was billed correctly but
+                        // every item after the first silently vanished from the order/seller view.
+                        // Fix: create one order per listing. The seller's single delivery fee is
+                        // applied once (to the first order in the group) rather than once per
+                        // item, so the buyer isn't double-charged for one shipment; the platform
+                        // fee is distributed per item so each order's numbers reconcile on their
+                        // own (unit_price × quantity + its share of fees = its grand_total).
+                        $itemCount = count($g['items']);
+                        foreach ($g['items'] as $idx => $item) {
+                            $listingId  = (int) $item['listing_id'];
+                            $quantity   = (int) $item['quantity'];
+                            $unitPrice  = (float) $item['price'];
+                            $itemSubtotal = $unitPrice * $quantity;
+                            $itemPlatformFee = round($itemSubtotal * 0.05, 2);
+                            $itemDeliveryFee = ($idx === 0) ? $deliveryFee : 0.0; // one shipment per seller, not per item
+                            $itemGrandTotal = $itemSubtotal + $itemPlatformFee + $itemDeliveryFee;
+                            $orderNumber = generate_order_number();
 
-                        $stmt = $pdo->prepare(
-                            'INSERT INTO orders
-                                (order_number, buyer_id, seller_id, listing_id, delivery_method_id,
-                                 delivery_address_id, pickup_point_id, quantity, unit_price,
-                                 subtotal, delivery_fee, platform_fee, grand_total, currency,
-                                 status, payment_status, notes)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "RWF", "pending", "unpaid", ?)'
-                        );
-                        $stmt->execute([
-                            $orderNumber, $uid, $sellerId, $listingId, $deliveryMethodId,
-                            $addressId ?: null, $pickupPointId ?: null,
-                            $quantity, $unitPrice, $subtotal, $deliveryFee, $platformFee, $grandTotal, $notes,
-                        ]);
-                        $orderId = (int)$pdo->lastInsertId();
+                            $stmt = $pdo->prepare(
+                                'INSERT INTO orders
+                                    (order_number, buyer_id, seller_id, listing_id, delivery_method_id,
+                                     delivery_address_id, pickup_point_id, quantity, unit_price,
+                                     subtotal, delivery_fee, platform_fee, grand_total, currency,
+                                     status, payment_status, notes)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "RWF", "pending", "unpaid", ?)'
+                            );
+                            $stmt->execute([
+                                $orderNumber, $uid, $sellerId, $listingId, $deliveryMethodId,
+                                $addressId ?: null, $pickupPointId ?: null,
+                                $quantity, $unitPrice, $itemSubtotal, $itemDeliveryFee, $itemPlatformFee, $itemGrandTotal, $notes,
+                            ]);
+                            $orderId = (int)$pdo->lastInsertId();
 
-                        // Create payment record
-                        $paymentId = create_payment($orderId, $uid, $grandTotal, $paymentMethod);
+                            // Create payment record
+                            $paymentId = create_payment($orderId, $uid, $itemGrandTotal, $paymentMethod);
 
-                        // If wallet payment, process immediately
-                        if ($paymentMethod === 'wallet') {
-                            $result = $provider->initiate($paymentId, $grandTotal, 'RWF');
-                            if ($result['status'] !== 'successful') {
-                                throw new RuntimeException('Wallet payment failed: ' . ($result['error'] ?? 'unknown'));
+                            // If wallet payment, process immediately
+                            if ($paymentMethod === 'wallet') {
+                                $result = $provider->initiate($paymentId, $itemGrandTotal, 'RWF');
+                                if ($result['status'] !== 'successful') {
+                                    throw new RuntimeException('Wallet payment failed: ' . ($result['error'] ?? 'unknown'));
+                                }
+                                $totalPaid += $itemGrandTotal;
                             }
-                            $totalPaid += $grandTotal;
-                        }
 
-                        $totalOrders++;
+                            $totalOrders++;
+                        }
                     }
 
                     // Clear cart items that were purchased
