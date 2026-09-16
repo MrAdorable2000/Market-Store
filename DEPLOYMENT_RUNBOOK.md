@@ -119,12 +119,11 @@ Against the real production URL:
 - [ ] Check server/function logs once for the `[SECURITY WARNING]` line
       about demo credentials — should be silent
 
-## 6. What's still a known limitation after all of this
+## 6. Storage note (already handled, no action needed)
 
-Listing-image uploads only fall back to database storage when a disk write
-*fails outright*. On a Vercel serverless/container deployment with multiple
-replicas or container recycling between requests, a disk write can succeed
-in the moment and still not be visible to the next request, or be lost on
-redeploy. See `docs/object-storage-migration-plan.md` for a concrete plan to
-close this permanently — it's real feature work, not a quick fix, so it's
-written up separately rather than done silently as part of this audit.
+Listing-image uploads now correctly go straight to database-blob storage
+in production (matching the already-proven avatar pattern), instead of
+risking the silent-404 failure mode a stateless/multi-replica filesystem
+would otherwise cause. This is verified and shipped — see
+`docs/object-storage-migration-plan.md` for the detail and the longer-term
+real-object-storage option (not urgent, correctness issue is closed).

@@ -514,19 +514,33 @@ function handle_image_upload(string $field, string $prefix = 'img', bool $allowB
         $relPath  = 'assets/uploads/' . $safeName;
         $absPath = __DIR__ . '/../' . $relPath;
 
+        // On a stateless/serverless deployment (Vercel), a disk write can
+        // succeed in the request that makes it and still be invisible to a
+        // later request served by a different container replica, or lost on
+        // redeploy — the on-failure blob fallback below doesn't catch that,
+        // since the write didn't fail, it just didn't persist. So in
+        // production, callers that opted into blob fallback skip the disk
+        // write entirely and go straight to the same DB-blob path already
+        // used (and already proven, in production, for profile avatars).
+        // Local/XAMPP installs are unaffected — this only changes behavior
+        // when APP_ENV is 'production' AND the caller passed
+        // $allowBlobFallback = true.
+        $forceBlobInProduction = $allowBlobFallback
+            && defined('APP_ENV') && APP_ENV === 'production';
+
         // Move + optimize. @-suppressed: a failure here (commonly an
         // uploads/ directory permissions problem on the live server) is
         // fully handled below — the raw PHP warning must never leak into
         // the page.
-        if (!@move_uploaded_file($tmpPath, $absPath)) {
+        if ($forceBlobInProduction || !@move_uploaded_file($tmpPath, $absPath)) {
             if (!$allowBlobFallback) {
                 return $cleanupAndFail(t('errors.upload_failed'));
             }
-            // The filesystem write failed. Rather than fail the whole
-            // product submission, fall back to storing the image as a
-            // database BLOB — the same fallback already used for profile
-            // avatars. $tmpPath is PHP's own upload temp file and is
-            // always writable, so it's validated/optimized in place.
+            // The filesystem write failed, or (in production) was skipped
+            // on purpose — either way, store the image as a database BLOB
+            // instead, the same fallback already used for profile avatars.
+            // $tmpPath is PHP's own upload temp file and is always
+            // writable, so it's validated/optimized in place.
             if (optimize_image_inplace($tmpPath) === false) {
                 return $cleanupAndFail(t('errors.upload_type'));
             }

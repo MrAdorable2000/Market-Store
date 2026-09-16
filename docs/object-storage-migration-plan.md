@@ -36,7 +36,30 @@ silently 404 for buyers shortly after, with no error anywhere.
 
 ## Recommended fix, in order of effort
 
-### Option A (smallest change, ships today): flip the priority for listing images
+### Option A (smallest change, ships today) — IMPLEMENTED
+
+**Update: this has now been implemented** (see `includes/functions.php`,
+`handle_image_upload()`). When `APP_ENV === 'production'` (i.e.
+`ISOKO_ENV=production`) and a caller opted into blob fallback, the disk
+write is skipped entirely and the image goes straight to the same
+DB-blob path already proven for avatars — not just as a failure fallback
+anymore, but as production's actual storage strategy. `local`/XAMPP
+installs are completely unaffected (still disk-first, unchanged).
+
+Verified end-to-end against a live database in both environments:
+- `ISOKO_ENV=local`: published a listing with a photo → stored as a real
+  file under `assets/uploads/`, exactly as before.
+- `ISOKO_ENV=production`: published the identical listing with the same
+  photo → stored as `db-blob:<id>` with the image bytes in
+  `listing_images.image_blob`, zero new files written to disk. Confirmed
+  the image serves back correctly (`GET /api/v1/listing-image/index.php?id=`)
+  and the listing detail page renders normally.
+
+Only listing images are affected — `admin/blog.php`'s cover-photo upload
+doesn't opt into blob fallback, so it's untouched by this change.
+
+Original writeup below, kept for context:
+
 
 Make listing images default to DB-blob storage the same way avatars
 already do, instead of only using it as a failure fallback. Concretely, in
@@ -86,9 +109,10 @@ do.
 
 ## Recommendation
 
-Ship **Option A** immediately as a low-risk stopgap (it reuses
-already-proven code — the exact same DB-blob path this app already relies
-on for every avatar), then plan **Option B** as real feature work once
-there's a bucket/provider decision to make. Don't ship to a
-multi-replica Vercel production environment without at least Option A —
-the silent-404 failure mode is real and will affect real sellers' listings.
+**Option A is now shipped** (see above) — production listing images go
+straight to the already-proven DB-blob path instead of risking the
+silent-404 failure mode. Plan **Option B** (real object storage) as
+follow-up feature work once there's a bucket/provider decision to make —
+it removes the MySQL row-size growth concern and lets images serve from a
+CDN instead of through PHP, but isn't urgent now that the correctness
+issue is closed.
