@@ -450,6 +450,7 @@ return [
     'errors.password_incorrect' => 'Your current password is incorrect.',
     'errors.reset_invalid'   => 'This reset link is invalid or expired. Please request a new one.',
     'errors.listing_not_found' => 'Listing not found.',
+    'errors.listing_has_orders' => 'This listing has existing orders and cannot be deleted. Unlist it instead so its order history is preserved.',
     'errors.category_not_found' => 'Category not found.',
     'errors.article_not_found' => 'Article not found.',
     'errors.access_denied'   => 'Access denied.',

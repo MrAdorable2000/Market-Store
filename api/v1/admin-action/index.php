@@ -136,9 +136,22 @@ switch ($action) {
         $l = $id ? admin_fetch('SELECT id, title, seller_id FROM listings WHERE id = ?', [$id]) : null;
         if (!$l) { admin_action_finish(false, t('errors.listing_not_found'), $backUrl); }
 
-        $ok = $pdo->prepare('DELETE FROM listings WHERE id = ?')->execute([$id]); // cascades to images/attributes/favorites
-        admin_log('listings', 'listing_deleted', 'Listing "' . $l['title'] . '" permanently removed', $ok ? 'success' : 'error');
-        admin_action_finish($ok, $ok ? t('flash.listing_deleted') : t('errors.unknown'), $backUrl);
+        // orders.listing_id is ON DELETE RESTRICT on purpose (order/financial
+        // history must survive a listing being removed) - so deleting any
+        // listing that has ever been ordered throws an uncaught
+        // PDOException with no try/catch here. Catch it and show a clear,
+        // actionable message instead of a fatal error / blank page.
+        try {
+            $ok = $pdo->prepare('DELETE FROM listings WHERE id = ?')->execute([$id]); // cascades to images/attributes/favorites
+            admin_log('listings', 'listing_deleted', 'Listing "' . $l['title'] . '" permanently removed', $ok ? 'success' : 'error');
+            admin_action_finish($ok, $ok ? t('flash.listing_deleted') : t('errors.unknown'), $backUrl);
+        } catch (PDOException $e) {
+            if ((int)$e->getCode() === 23000 || str_contains($e->getMessage(), 'fk_order_listing')) {
+                admin_log('listings', 'listing_delete_blocked', 'Delete blocked: "' . $l['title'] . '" has existing orders', 'error');
+                admin_action_finish(false, t('errors.listing_has_orders'), $backUrl);
+            }
+            throw $e;
+        }
     }
 
     case 'listing_feature':
