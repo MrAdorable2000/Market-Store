@@ -1,4 +1,24 @@
-# Reviews: displayed everywhere, submittable nowhere
+# Reviews: displayed everywhere, submittable nowhere — IMPLEMENTED
+
+**Update: this has now been implemented.** See `pages/orders.php`
+(`action=submit_review` in the POST handler, and the "Leave a Review"
+card on the order detail view). Verified end-to-end: submitted a real
+5-star review through the actual UI, confirmed it lands in `reviews`
+with correct `reviewer_id`/`seller_id`/`listing_id`, confirmed a second
+submission attempt for the same order is cleanly blocked by the existing
+`UNIQUE(reviewer_id, seller_id, listing_id)` constraint (shows "You've
+already reviewed this order" instead of a raw DB error), and confirmed
+the UI itself swaps the form for a "✓ You've reviewed this order"
+confirmation once one exists, so a buyer never even sees a resubmittable
+form.
+
+Kept deliberately simple relative to the "suggested shape" below: no
+edit/delete-your-own-review UI (not needed to close the gap), and
+eligibility is `status IN ('delivered', 'completed')` rather than a more
+elaborate window — matches how "Confirm Receipt" already gates on
+`delivered` elsewhere on the same page.
+
+Original writeup preserved below for context.
 
 ## What exists
 

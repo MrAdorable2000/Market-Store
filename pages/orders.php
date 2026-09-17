@@ -116,6 +116,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare("UPDATE orders SET status='disputed' WHERE id=?")->execute([$targetOrderId]);
                     flash_set('success', 'Dispute opened. Our team will review it.');
                     break;
+
+                case 'submit_review':
+                    if (!$isBuyer) { flash_set('error', 'Not authorized.'); break; }
+                    if (!in_array($order['status'], ['delivered', 'completed'], true)) {
+                        flash_set('error', 'You can only review an order after it has been delivered.');
+                        break;
+                    }
+                    $rating = (int)($_POST['rating'] ?? 0);
+                    $comment = trim($_POST['comment'] ?? '');
+                    if ($rating < 1 || $rating > 5) {
+                        flash_set('error', 'Please choose a rating from 1 to 5 stars.');
+                        break;
+                    }
+                    try {
+                        $pdo->prepare(
+                            'INSERT INTO reviews (reviewer_id, seller_id, listing_id, rating, comment) VALUES (?, ?, ?, ?, ?)'
+                        )->execute([$uid, (int)$order['seller_id'], (int)$order['listing_id'], $rating, $comment !== '' ? $comment : null]);
+                        flash_set('success', 'Thanks — your review has been posted.');
+                    } catch (PDOException $e) {
+                        // reviews has UNIQUE(reviewer_id, seller_id, listing_id) - this
+                        // buyer already reviewed this exact seller+listing combination.
+                        if ((int)$e->getCode() === 23000) {
+                            flash_set('error', "You've already reviewed this order.");
+                        } else {
+                            throw $e;
+                        }
+                    }
+                    break;
             }
         }
         redirect(APP_URL . '/pages/orders.php' . ($orderId ? '?id=' . $orderId : ($view === 'seller' ? '?view=seller' : '')));
@@ -154,6 +182,15 @@ if ($orderId) {
     if (!$isBuyer && !$isSeller && !is_admin()) {
         flash_set('error', 'Not authorized.');
         redirect(APP_URL . '/pages/orders.php');
+    }
+
+    // Has the buyer already reviewed this seller+listing? (matches the
+    // reviews table's own UNIQUE(reviewer_id, seller_id, listing_id))
+    $existingReview = null;
+    if ($isBuyer) {
+        $rvStmt = $pdo->prepare('SELECT id FROM reviews WHERE reviewer_id = ? AND seller_id = ? AND listing_id = ?');
+        $rvStmt->execute([$uid, (int)$order['seller_id'], (int)$order['listing_id']]);
+        $existingReview = $rvStmt->fetch();
     }
 
     // Load delivery tracking history
@@ -248,6 +285,38 @@ if ($orderId) {
         <?php endif; ?>
 
         <!-- Actions -->
+        <?php if ($isBuyer && in_array($order['status'], ['delivered', 'completed'], true)): ?>
+        <div class="card" style="padding:18px;margin-top:16px;">
+            <?php if ($existingReview): ?>
+                <h3 style="font-size:15px;font-weight:800;margin:0;">✓ You've reviewed this order</h3>
+            <?php else: ?>
+                <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;">Leave a Review</h3>
+                <p style="font-size:13px;color:var(--text-soft);margin:0 0 12px;">How was your experience with this seller?</p>
+                <form method="post" action="">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="action" value="submit_review">
+                    <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
+                    <div class="form-group">
+                        <label style="font-size:13px;font-weight:600;">Rating</label>
+                        <select name="rating" required style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                            <option value="">Choose a rating</option>
+                            <option value="5">★★★★★ Excellent</option>
+                            <option value="4">★★★★☆ Good</option>
+                            <option value="3">★★★☆☆ Okay</option>
+                            <option value="2">★★☆☆☆ Poor</option>
+                            <option value="1">★☆☆☆☆ Very poor</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-top:10px;">
+                        <label style="font-size:13px;font-weight:600;">Comment (optional)</label>
+                        <textarea name="comment" rows="3" placeholder="Share more about your experience..." style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn--primary" style="margin-top:10px;">Submit Review</button>
+                </form>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
         <?php if ($isBuyer && $order['status'] === 'pending'): ?>
         <div class="card" style="padding:18px;margin-top:16px;">
             <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;">Cancel Order</h3>
