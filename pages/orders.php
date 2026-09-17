@@ -55,13 +55,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 case 'cancel':
                     if (!$isBuyer || $order['status'] !== 'pending') { flash_set('error', 'Cannot cancel.'); break; }
-                    // Refund the buyer if payment was already held
-                    if ($order['payment_status'] === 'escrow_held') {
-                        wallet_refund($uid, (float)$order['grand_total'], $targetOrderId, 'Order cancelled');
+                    try {
+                        $pdo->beginTransaction();
+                        // Refund the buyer if payment was already held
+                        if ($order['payment_status'] === 'escrow_held') {
+                            wallet_refund($uid, (float)$order['grand_total'], $targetOrderId, 'Order cancelled');
+                        }
+                        $pdo->prepare("UPDATE orders SET status='cancelled', payment_status='refunded', cancelled_at=NOW() WHERE id=?")->execute([$targetOrderId]);
+                        // NOTE: this INSERT previously declared 4 columns but supplied only 3
+                        // values (with the two literals in the wrong positions, and only one
+                        // ? for two bound params) - it threw a column/parameter-count
+                        // PDOException on every single call, after the refund and status
+                        // update above had already committed (no transaction was wrapping
+                        // this before). Fixed the column/value alignment and wrapped the
+                        // whole action in one transaction so a failure here can no longer
+                        // leave the order refunded-but-not-marked-cancelled.
+                        $pdo->prepare("INSERT INTO delivery_tracking (order_id, status, note, created_by) VALUES (?, 'cancelled', 'Order cancelled by buyer', ?)")->execute([$targetOrderId, $uid]);
+                        $pdo->commit();
+                        flash_set('success', 'Order cancelled. Any held funds have been refunded.');
+                    } catch (Throwable $e) {
+                        if ($pdo->inTransaction()) {
+                            try { $pdo->rollBack(); } catch (PDOException $rb) { /* ignore */ }
+                        }
+                        flash_set('error', 'Could not cancel this order. Please try again.');
                     }
-                    $pdo->prepare("UPDATE orders SET status='cancelled', payment_status='refunded', cancelled_at=NOW() WHERE id=?")->execute([$targetOrderId]);
-                    $pdo->prepare("INSERT INTO delivery_tracking (order_id, status, note, created_by) VALUES ('cancelled', 'Order cancelled by buyer', ?)")->execute([$targetOrderId, $uid]);
-                    flash_set('success', 'Order cancelled. Any held funds have been refunded.');
                     break;
 
                 case 'update_status':
@@ -231,6 +248,19 @@ if ($orderId) {
         <?php endif; ?>
 
         <!-- Actions -->
+        <?php if ($isBuyer && $order['status'] === 'pending'): ?>
+        <div class="card" style="padding:18px;margin-top:16px;">
+            <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;">Cancel Order</h3>
+            <p style="font-size:13px;color:var(--text-soft);margin:0 0 12px;">This order hasn't been confirmed by the seller yet. Cancelling now refunds any held funds immediately.</p>
+            <form method="post" action="">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="action" value="cancel">
+                <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
+                <button type="submit" class="btn btn--outline">Cancel Order</button>
+            </form>
+        </div>
+        <?php endif; ?>
+
         <?php if ($isBuyer && $order['status'] === 'delivered' && !$order['escrow_released']): ?>
         <div class="card" style="padding:18px;margin-top:16px;border-color:var(--brand-200);background:var(--brand-50);">
             <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;">Confirm Receipt</h3>
