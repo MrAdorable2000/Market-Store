@@ -1,4 +1,36 @@
-# Dispute resolution: designed, never built
+# Dispute resolution: designed, never built — IMPLEMENTED
+
+**Update: this has now been implemented**, using reasonable defaults
+where the original writeup flagged product decisions (kept intentionally
+minimal — no seller-response window, no evidence upload, admin resolves
+directly from the dispute's existing reason/description):
+
+- `pages/admin/disputes.php` — a list view (counts by status, filterable)
+  with three resolve actions per open dispute: refund buyer in full,
+  release to seller in full, or a split (admin enters the buyer's share,
+  the rest goes to the seller).
+- `dispute_resolve` action in `api/v1/admin-action/index.php` — uses
+  `wallet_refund()`/`wallet_release()` directly rather than
+  `release_escrow_to_seller()`, since that function is buyer-authorized
+  and explicitly refuses disputed orders (correct for its own purpose,
+  wrong fit for admin resolution). Wrapped in one transaction: fund
+  movement, order status update, dispute record update, and both
+  parties' notifications either all happen or none do.
+- Blocks re-resolving an already-resolved dispute, and blocks resolving
+  an order with no funds actually held (already refunded/released some
+  other way) — both return a clean message rather than silently
+  double-moving money.
+- Added a sidebar nav entry with an open-dispute count badge, matching
+  the existing reports/rentals pattern.
+
+Verified end-to-end against a live database: opened a dispute, resolved
+it as a split (buyer got exactly the specified amount, seller got exactly
+the remainder), then a separate dispute resolved as a full refund
+(buyer's wallet credited to the exact franc, order correctly marked
+cancelled), then confirmed attempting to resolve either dispute a second
+time is cleanly blocked with zero further fund movement to either party.
+
+Original writeup preserved below for context.
 
 ## What exists
 

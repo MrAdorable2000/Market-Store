@@ -33,6 +33,7 @@ require_once __DIR__ . '/../../../includes/auth.php';
 require_once __DIR__ . '/../../../includes/functions.php';
 require_once __DIR__ . '/../../../includes/admin_log.php';
 require_once __DIR__ . '/../../../includes/payment_config.php';
+require_once __DIR__ . '/../../../includes/wallet.php';
 
 /** Local JSON response helper (the API router is not loaded here). */
 if (!function_exists('admin_json_response')) {
@@ -361,6 +362,109 @@ switch ($action) {
         admin_log('reviews', 'review_deleted',
             (int) $rv['rating'] . '-star review by "' . $rv['reviewer'] . '" removed', $ok ? 'success' : 'error');
         admin_action_finish($ok, t('admin.action_done'), $backUrl);
+    }
+
+    /* ==================================================================
+     *  DISPUTES
+     *  See docs/dispute-resolution-gap.md for context: the disputes
+     *  table schema was fully designed but nothing resolved one until
+     *  this action. Uses wallet_refund()/wallet_release() directly
+     *  (not release_escrow_to_seller(), which is buyer-authorized and
+     *  explicitly refuses disputed orders) since this runs under admin
+     *  authorization instead.
+     * ================================================================== */
+    case 'dispute_resolve': {
+        $disputeId  = (int) ($_POST['dispute_id'] ?? 0);
+        $resolution = (string) ($_POST['resolution'] ?? '');
+        $adminUid   = (int) current_user()['id'];
+
+        if (!in_array($resolution, ['refund_full', 'release_to_seller', 'split'], true)) {
+            admin_action_finish(false, t('errors.required_fields'), $backUrl);
+        }
+
+        $dispute = $disputeId ? admin_fetch(
+            'SELECT d.*, o.id AS order_id, o.order_number, o.buyer_id, o.seller_id, o.grand_total,
+                    o.status AS order_status, o.payment_status
+             FROM disputes d JOIN orders o ON o.id = d.order_id WHERE d.id = ?',
+            [$disputeId]
+        ) : null;
+        if (!$dispute) { admin_action_finish(false, t('errors.dispute_not_found'), $backUrl); }
+        if (in_array($dispute['status'], ['resolved', 'closed'], true)) {
+            admin_action_finish(false, t('errors.dispute_already_resolved'), $backUrl);
+        }
+        if ($dispute['payment_status'] !== 'escrow_held') {
+            admin_action_finish(false, t('errors.dispute_no_escrow'), $backUrl);
+        }
+
+        $orderId   = (int) $dispute['order_id'];
+        $buyerId   = (int) $dispute['buyer_id'];
+        $sellerId  = (int) $dispute['seller_id'];
+        $total     = (float) $dispute['grand_total'];
+        $orderNum  = $dispute['order_number'];
+
+        $buyerAmount = 0.0;
+        $sellerAmount = 0.0;
+        if ($resolution === 'refund_full') {
+            $buyerAmount = $total;
+        } elseif ($resolution === 'release_to_seller') {
+            $sellerAmount = $total;
+        } else { // split
+            $buyerAmount = round((float) ($_POST['split_buyer_amount'] ?? -1), 2);
+            if ($buyerAmount < 0 || $buyerAmount > $total) {
+                admin_action_finish(false, t('errors.dispute_invalid_split'), $backUrl);
+            }
+            $sellerAmount = round($total - $buyerAmount, 2);
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // Lock the order row for the duration of the resolution
+            $pdo->prepare('SELECT id FROM orders WHERE id = ? FOR UPDATE')->execute([$orderId]);
+
+            if ($buyerAmount > 0) {
+                wallet_refund($buyerId, $buyerAmount, $orderId, 'Dispute ' . $dispute['dispute_number'] . ' resolution: refund');
+            }
+            if ($sellerAmount > 0) {
+                wallet_release($sellerId, $sellerAmount, $orderId, 'Dispute ' . $dispute['dispute_number'] . ' resolution: release');
+            }
+
+            $newOrderStatus = $resolution === 'refund_full' ? 'cancelled' : 'completed';
+            $pdo->prepare(
+                "UPDATE orders SET status = ?, payment_status = 'released', escrow_released = 1,
+                    completed_at = NOW(), updated_at = NOW() WHERE id = ?"
+            )->execute([$newOrderStatus, $orderId]);
+
+            $pdo->prepare(
+                'UPDATE disputes SET status = "resolved", resolution = ?, refund_amount = ?, admin_id = ?, resolved_at = NOW() WHERE id = ?'
+            )->execute([$resolution, $buyerAmount, $adminUid, $disputeId]);
+
+            $pdo->prepare(
+                "INSERT INTO delivery_tracking (order_id, status, note, created_by) VALUES (?, ?, ?, ?)"
+            )->execute([$orderId, $newOrderStatus, 'Dispute resolved by admin: ' . $resolution, $adminUid]);
+
+            $note = match ($resolution) {
+                'refund_full' => 'The dispute for order ' . $orderNum . ' was resolved with a full refund to you.',
+                'release_to_seller' => 'The dispute for order ' . $orderNum . ' was resolved in the seller\'s favor.',
+                'split' => 'The dispute for order ' . $orderNum . ' was resolved with a split settlement.',
+            };
+            $pdo->prepare('INSERT INTO notifications (user_id, type, title, body, link) VALUES (?, "order", "Dispute resolved", ?, ?)')
+                ->execute([$buyerId, $note, '/pages/orders.php?id=' . $orderId]);
+            $pdo->prepare('INSERT INTO notifications (user_id, type, title, body, link) VALUES (?, "order", "Dispute resolved", ?, ?)')
+                ->execute([$sellerId, $note, '/pages/orders.php?view=seller&id=' . $orderId]);
+
+            $pdo->commit();
+            admin_log('disputes', 'dispute_resolved',
+                'Dispute ' . $dispute['dispute_number'] . ' resolved (' . $resolution . ') for order ' . $orderNum, 'success');
+            admin_action_finish(true, t('admin.action_done'), $backUrl);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                try { $pdo->rollBack(); } catch (PDOException $rb) { /* ignore */ }
+            }
+            admin_log('disputes', 'dispute_resolve_failed',
+                'Failed to resolve dispute ' . $dispute['dispute_number'], 'error');
+            admin_action_finish(false, t('errors.unknown'), $backUrl);
+        }
     }
 
     /* ==================================================================

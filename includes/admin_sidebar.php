@@ -29,6 +29,7 @@ if (!$user) return;
 // ---- Real badge counts (single cheap query each, only on admin pages) ----
 $badgePending   = (int) db()->query("SELECT COUNT(*) FROM listings WHERE status = 'pending'")->fetchColumn();
 $badgeReports   = (int) db()->query("SELECT COUNT(*) FROM reports WHERE status IN ('open','reviewing')")->fetchColumn();
+$badgeDisputes  = (int) db()->query("SELECT COUNT(*) FROM disputes WHERE status NOT IN ('resolved','closed')")->fetchColumn();
 $badgeMessages  = (int) db()->query("SELECT COUNT(*) FROM contact_requests WHERE is_read = 0")->fetchColumn();
 $badgeRentals   = (int) db()->query("SELECT COUNT(*) FROM rental_requests WHERE status = 'pending'")->fetchColumn();
 
@@ -69,6 +70,7 @@ $navGroups = [
             ['key' => 'rentals', 'url' => APP_URL . '/pages/admin/rentals.php', 'label' => t('admin.nav_rentals'), 'icon' => 'rentals', 'badge' => $badgeRentals],
             ['key' => 'reviews', 'url' => APP_URL . '/pages/admin/reviews.php', 'label' => t('admin.nav_reviews'), 'icon' => 'reviews'],
             ['key' => 'reports', 'url' => APP_URL . '/pages/admin/reports.php', 'label' => t('admin.nav_reports'), 'icon' => 'reports', 'badge' => $badgeReports],
+            ['key' => 'disputes', 'url' => APP_URL . '/pages/admin/disputes.php', 'label' => 'Disputes', 'icon' => 'reports', 'badge' => $badgeDisputes],
         ],
     ],
     'communication' => [
