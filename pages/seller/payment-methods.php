@@ -163,8 +163,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($check->fetch()) {
                 flash_set('error', 'Cannot remove this method — it is used in a pending withdrawal.');
             } else {
-                $pdo->prepare('DELETE FROM withdrawal_methods WHERE id = ? AND user_id = ?')->execute([$methodId, $uid]);
-                flash_set('success', 'Payment method removed.');
+                // withdrawal_method_id is ON DELETE RESTRICT on purpose (a
+                // withdrawal's payout destination must stay on record even
+                // after the method is removed) - the pending/processing
+                // check above only rules out the "actively in flight" case;
+                // it does NOT rule out a completed or failed withdrawal
+                // still referencing this method, which the FK constraint
+                // blocks regardless of status. Without this try/catch that
+                // threw an uncaught PDOException instead of a clean message.
+                try {
+                    $pdo->prepare('DELETE FROM withdrawal_methods WHERE id = ? AND user_id = ?')->execute([$methodId, $uid]);
+                    flash_set('success', 'Payment method removed.');
+                } catch (PDOException $e) {
+                    if ((int) $e->getCode() === 23000) {
+                        flash_set('error', 'This method has past withdrawals on record and cannot be removed.');
+                    } else {
+                        throw $e;
+                    }
+                }
             }
             redirect(APP_URL . '/pages/seller/payment-methods.php');
             break;

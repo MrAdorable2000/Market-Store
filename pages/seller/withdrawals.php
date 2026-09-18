@@ -63,8 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'delete_method':
                 $methodId = (int)($_POST['method_id'] ?? 0);
-                $pdo->prepare('DELETE FROM withdrawal_methods WHERE id = ? AND user_id = ?')->execute([$methodId, $uid]);
-                flash_set('success', 'Method removed.');
+                // Same ON DELETE RESTRICT protection/fix as pages/seller/payment-methods.php's
+                // 'remove' case - this call site had no guard against it at all.
+                try {
+                    $pdo->prepare('DELETE FROM withdrawal_methods WHERE id = ? AND user_id = ?')->execute([$methodId, $uid]);
+                    flash_set('success', 'Method removed.');
+                } catch (PDOException $e) {
+                    if ((int) $e->getCode() === 23000) {
+                        flash_set('error', 'This method has past withdrawals on record and cannot be removed.');
+                    } else {
+                        throw $e;
+                    }
+                }
                 break;
 
             case 'request_withdrawal':
