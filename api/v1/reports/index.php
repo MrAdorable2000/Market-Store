@@ -27,7 +27,16 @@ if (!csrf_check()) {
 $listingId  = (int)($_POST['listing_id'] ?? 0);
 $reason      = trim($_POST['reason'] ?? '');
 $details     = trim($_POST['details'] ?? '');
-$reporterId  = is_logged_in() ? (int) current_user()['id'] : (((int)($_POST['reporter_id'] ?? 0)) ?: null);
+// SECURITY: reporter_id must never come from client input. A logged-out
+// visitor previously could POST an arbitrary reporter_id directly to this
+// endpoint (bypassing the form, which only ever renders that hidden field
+// when is_logged_in() is true) and have a report - visible to admins
+// together with that user's real name and email via the reports.reporter_id
+// join in pages/admin/reports.php - falsely attributed to any real user
+// whose id they guessed. The only legitimate source of truth for "who is
+// reporting" is the server-side session; a logged-out report is always
+// anonymous (null), never a claimed identity.
+$reporterId  = is_logged_in() ? (int) current_user()['id'] : null;
 
 if (!$listingId || !$reason) {
     if (is_ajax_report()) json_response(['error' => t('errors.report_reason_required')], 400);
