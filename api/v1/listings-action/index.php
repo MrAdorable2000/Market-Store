@@ -149,8 +149,22 @@ switch ($action) {
             $ok = false; $message = t('errors.not_owner');
             break;
         }
-        // Hard delete (cascades to images, attributes, favorites)
-        db()->prepare('DELETE FROM listings WHERE id = ?')->execute([$listingId]);
+        // orders.listing_id is ON DELETE RESTRICT on purpose (order/financial
+        // history must survive a listing being removed) - see the identical
+        // fix and reasoning in api/v1/admin-action/index.php's listing_delete
+        // case. Without this try/catch, a seller (or admin, via this same
+        // endpoint) deleting any listing that had ever been ordered would hit
+        // an uncaught PDOException instead of a clean message.
+        try {
+            db()->prepare('DELETE FROM listings WHERE id = ?')->execute([$listingId]);
+        } catch (PDOException $e) {
+            if ((int) $e->getCode() === 23000 || str_contains($e->getMessage(), 'fk_order_listing')) {
+                $ok = false;
+                $message = t('errors.listing_has_orders');
+                break;
+            }
+            throw $e;
+        }
         if (is_admin() && current_user()['id'] != $l['seller_id']) {
             admin_log('listings', 'listing_deleted', 'Listing "' . $l['title'] . '" deleted by admin');
         }
