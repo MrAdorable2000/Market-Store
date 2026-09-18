@@ -127,3 +127,13 @@ risking the silent-404 failure mode a stateless/multi-replica filesystem
 would otherwise cause. This is verified and shipped — see
 `docs/object-storage-migration-plan.md` for the detail and the longer-term
 real-object-storage option (not urgent, correctness issue is closed).
+
+## 7. Known limitation: email/SMS notifications won't deliver yet
+
+Order-update and password-reset notifications land correctly in-app
+(verified), but the email/SMS channels rely on PHP's `mail()`, which
+needs a local MTA that the container doesn't have. Nothing crashes —
+delivery just silently fails and gets logged. See
+`docs/email-sms-delivery-gap.md` for the fix (an HTTP-based transactional
+email API — Resend/Postmark/SendGrid/Mailgun all work well for this) and
+exactly what changes once you have a provider account.
