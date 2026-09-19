@@ -6,6 +6,21 @@
  */
 require_once __DIR__ . '/../../../includes/auth.php';
 
+// Self-contained json_response() - see the identical fix and full
+// reasoning in api/v1/favorites/index.php and api/v1/rentals/index.php
+// from this same audit. Latent here (the plain-form-POST caller,
+// pages/listing-details.php, never reaches json_response() since
+// is_ajax_contact() is false for it) rather than currently live, but
+// fixed for consistency and to prevent silently reintroducing the crash.
+if (!function_exists('json_response')) {
+    function json_response($data, int $code = 200): void {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($code);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+}
+
 function is_ajax_contact(): bool {
     return (strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest')
         || (strtolower($_SERVER['HTTP_ACCEPT'] ?? '') === 'application/json');

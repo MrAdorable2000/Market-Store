@@ -7,6 +7,20 @@
  */
 require_once __DIR__ . '/../../../includes/auth.php';
 
+// Self-contained json_response() - see api/v1/categories/index.php and
+// api/v1/listings/index.php earlier in this audit for the identical fix.
+// Not currently called by any frontend code (a documented public API
+// endpoint, like those two, presumably for a future consumer), but would
+// crash unconditionally on every request without this.
+if (!function_exists('json_response')) {
+    function json_response($data, int $code = 200): void {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($code);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     json_response(['error' => t('errors.method_not_allowed')], 405);
 }

@@ -20,6 +20,29 @@
 require_once __DIR__ . '/../../../includes/auth.php';
 
 /* Helpers (defined here so this file is self-contained) */
+// NOTE: json_response()/json_input() themselves were missing here despite
+// this comment - they're only defined in api/v1/index.php's router, but
+// this file is called directly by the frontend (assets/js/favorites.js),
+// bypassing the router entirely. Every real click of the favorite-heart
+// icon site-wide sends X-Requested-With: XMLHttpRequest, which is_ajax()
+// below correctly detects - routing every real request straight into a
+// json_response() call that didn't exist, fatally crashing every single
+// favorite/unfavorite attempt. Confirmed live before adding these.
+if (!function_exists('json_response')) {
+    function json_response($data, int $code = 200): void {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($code);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+}
+if (!function_exists('json_input')) {
+    function json_input(): array {
+        $raw = file_get_contents('php://input');
+        $decoded = json_decode((string) $raw, true);
+        return is_array($decoded) ? $decoded : $_POST;
+    }
+}
 function is_ajax(): bool {
     return (strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest')
         || (strtolower($_SERVER['HTTP_ACCEPT'] ?? '') === 'application/json');

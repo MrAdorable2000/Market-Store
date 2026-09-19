@@ -9,6 +9,24 @@
  */
 require_once __DIR__ . '/../../../includes/auth.php';
 
+// Self-contained json_response()/json_input() - see the identical fix and
+// full reasoning in api/v1/favorites/index.php and api/v1/rentals/index.php
+// from this same audit. The plain-form-POST path here (this file's actual
+// current caller, pages/listing-details.php) never reaches json_response()
+// since is_ajax_report() is false for it, so this specific gap was latent
+// rather than live - but the unconditional call on a non-POST method
+// (line below) and any future AJAX caller would hit it exactly like
+// favorites.js did, so fixing it now for consistency and to prevent
+// silently reintroducing the same crash.
+if (!function_exists('json_response')) {
+    function json_response($data, int $code = 200): void {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($code);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+}
+
 function is_ajax_report(): bool {
     return (strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest')
         || (strtolower($_SERVER['HTTP_ACCEPT'] ?? '') === 'application/json');
