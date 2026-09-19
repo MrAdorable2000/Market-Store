@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             json_response(['error' => t('errors.invalid_token')], 403);
         } else {
             flash_set('error', t('errors.invalid_token'));
-            redirect($_SERVER['HTTP_REFERER'] ?? (APP_URL . '/pages/favorites.php'));
+            redirect_back(APP_URL . '/pages/favorites.php');
         }
     }
 

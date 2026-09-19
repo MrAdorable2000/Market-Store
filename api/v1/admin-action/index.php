@@ -60,7 +60,7 @@ function admin_action_finish(bool $ok, string $message, string $fallbackUrl): vo
         admin_json_response(['error' => $message], 403);
     }
     flash_set($ok ? 'success' : 'error', $message);
-    redirect($_SERVER['HTTP_REFERER'] ?? $fallbackUrl);
+    redirect_back($fallbackUrl);
 }
 
 $backUrl = APP_URL . '/pages/admin/dashboard.php';

@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if (!csrf_check()) {
     if (is_ajax_action()) json_response(['error' => t('errors.invalid_token')], 403);
     flash_set('error', t('errors.invalid_token'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 $listingId = (int)($_POST['listing_id'] ?? 0);
@@ -62,7 +62,7 @@ $action    = $_POST['action'] ?? '';
 if (!$listingId || !$action) {
     if (is_ajax_action()) json_response(['error' => t('errors.required_fields')], 400);
     flash_set('error', t('errors.required_fields'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 // Verify listing exists
@@ -72,7 +72,7 @@ $l = $stmt->fetch();
 if (!$l) {
     if (is_ajax_action()) json_response(['error' => t('errors.listing_not_found')], 404);
     flash_set('error', t('errors.listing_not_found'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 $ok = true;
@@ -239,4 +239,4 @@ if (!$ok) {
 }
 
 // Redirect back
-redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/pages/seller/dashboard.php');
+redirect_back(APP_URL . '/pages/seller/dashboard.php');

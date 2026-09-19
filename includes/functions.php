@@ -131,6 +131,24 @@ function redirect(string $url): void
 }
 
 /**
+ * Redirect back to the page that submitted this request, falling back to
+ * $default if there isn't one. Only trusts $_SERVER['HTTP_REFERER'] when
+ * it's actually same-origin (starts with APP_URL) — the header is
+ * client-supplied and, while normal browser navigation can't set it to an
+ * arbitrary string (only the requesting page's own URL), it should never
+ * be reflected into a redirect unchecked. Used across the API action
+ * endpoints in place of `redirect($_SERVER['HTTP_REFERER'] ?? $default)`.
+ */
+function redirect_back(string $default): void
+{
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    if ($referer !== '' && str_starts_with($referer, rtrim(APP_URL, '/'))) {
+        redirect($referer);
+    }
+    redirect($default);
+}
+
+/**
  * Repopulate form fields after a failed submission.
  */
 function old(string $key, $default = ''): string

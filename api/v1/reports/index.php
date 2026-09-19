@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if (!csrf_check()) {
     if (is_ajax_report()) json_response(['error' => t('errors.invalid_token')], 403);
     flash_set('error', t('errors.invalid_token'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 $listingId  = (int)($_POST['listing_id'] ?? 0);
@@ -41,7 +41,7 @@ $reporterId  = is_logged_in() ? (int) current_user()['id'] : null;
 if (!$listingId || !$reason) {
     if (is_ajax_report()) json_response(['error' => t('errors.report_reason_required')], 400);
     flash_set('error', t('errors.report_reason_required'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 // Verify listing exists
@@ -50,7 +50,7 @@ $check->execute([$listingId]);
 if (!$check->fetch()) {
     if (is_ajax_report()) json_response(['error' => t('errors.listing_not_found')], 404);
     flash_set('error', t('errors.listing_not_found'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 // Insert report

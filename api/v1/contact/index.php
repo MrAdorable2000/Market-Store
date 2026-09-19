@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if (!csrf_check()) {
     if (is_ajax_contact()) json_response(['error' => t('errors.invalid_token')], 403);
     flash_set('error', t('errors.invalid_token'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 $listingId = (int)($_POST['listing_id'] ?? 0);
@@ -31,12 +31,12 @@ $message    = trim($_POST['message'] ?? '');
 if (!$listingId || !$sellerId || !$name || !$email || !$message) {
     if (is_ajax_contact()) json_response(['error' => t('errors.required_fields')], 400);
     flash_set('error', t('errors.required_fields'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     if (is_ajax_contact()) json_response(['error' => t('errors.email_invalid')], 400);
     flash_set('error', t('errors.email_invalid'));
-    redirect($_SERVER['HTTP_REFERER'] ?? APP_URL . '/');
+    redirect_back(APP_URL . '/');
 }
 
 $senderId = is_logged_in() ? current_user()['id'] : null;
