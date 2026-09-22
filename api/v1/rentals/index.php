@@ -57,7 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // was no csrf_check() anywhere in this file despite the form sending
     // the token; json_input() already falls back to $_POST for form
     // submissions, so the token is present in $data either way.
-    $csrfToken = (string) ($data['_csrf'] ?? '');
+    //
+    // Also accepts the X-CSRF-Token header (same dual-path pattern as
+    // api/v1/favorites/index.php, api/v1/cart/index.php,
+    // api/v1/checkout/index.php, api/v1/orders/index.php) so the mobile
+    // app's ApiClient.postAuthed() — which sends the header, not a body
+    // field — works against this endpoint too.
+    $csrfToken = (string) ($data['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (!hash_equals((string) ($_SESSION[CSRF_TOKEN_NAME] ?? ''), $csrfToken)) {
         json_response(['error' => 'Invalid or missing CSRF token'], 403);
     }
