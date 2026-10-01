@@ -108,8 +108,12 @@ function app_url(): string
     }
 
     // Determine protocol + host
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (($_SERVER['SERVER_PORT'] ?? 0) == 443);
+    $forwardedProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+$forwardedProto = strtolower(trim(explode(',', $forwardedProto)[0]));
+
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['SERVER_PORT'] ?? 0) == 443)
+    || $forwardedProto === 'https';
     $protocol = $https ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? 'localhost');
 
