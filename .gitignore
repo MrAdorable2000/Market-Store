@@ -22,3 +22,4 @@ deployment/load-test.js
 # Local database backups and config backups
 *.sql
 *.backup
+isoko_ryacu_backup.sql
