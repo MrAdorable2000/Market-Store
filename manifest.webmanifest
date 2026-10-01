@@ -1,0 +1,37 @@
+{
+  "name": "Isoko Ryacu — Marketplace",
+  "short_name": "Isoko Ryacu",
+  "description": "Discover, buy, sell and rent on Isoko Ryacu.",
+  "lang": "rw",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7faf9",
+  "theme_color": "#0ea5a4",
+  "categories": [
+    "shopping",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "./assets/images/logo/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/images/logo/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "./",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "prefer_related_applications": false
+}

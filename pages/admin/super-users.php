@@ -204,7 +204,7 @@ foreach ($pdo->query("SELECT r.name, COUNT(u.id) AS cnt FROM roles r LEFT JOIN u
 $pageTitle = 'User Management';
 $activePage = 'admin';
 $adminActivePage = 'users';
-$extraCss = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle = 'User Management';
 $adminPageSubtitle = 'Complete CRUD — create, edit, suspend, change roles';
 require_once __DIR__ . '/../../includes/header.php';

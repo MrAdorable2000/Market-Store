@@ -155,7 +155,7 @@ $pageTitle        = t('admin.dash_title');
 $pageDescription  = t('admin.dash_sub');
 $activePage       = 'admin';
 $adminActivePage  = 'dashboard';
-$extraCss         = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss         = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle   = t('admin.nav_overview');
 $adminPageSubtitle= t('admin.dash_sub');
 require_once __DIR__ . '/../../includes/header.php';

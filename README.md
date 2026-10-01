@@ -305,3 +305,21 @@ Run `sql/product_management_upgrade.sql` after `sql/seller_upgrade.sql`. It keep
 
 ## Phase 3 production hardening
 See `deployment/PHASE3-README.md` for APCu caching, health checks, backups and staged k6 load testing.
+
+
+## Mobile app installation (PWA)
+
+Isoko Ryacu is now prepared as a **Progressive Web App (PWA)**. It can be installed from
+Chrome/Edge on Android and from Safari's **Add to Home Screen** on iPhone/iPad without
+rewriting the PHP backend as a separate mobile application.
+
+Requirements:
+- Serve the project over `http://localhost/...` for local development or **HTTPS** in production.
+- Keep `manifest.webmanifest` and `service-worker.js` at the project root.
+- Keep the PWA icons under `assets/images/logo/`.
+
+After opening the site on a supported phone browser, use the browser's **Install app**
+or **Add to Home Screen** option. The installed app opens in a standalone window.
+
+For a true Play Store/App Store application later, the existing `/api/v1/*` REST API can
+be reused by a Flutter/Android client.

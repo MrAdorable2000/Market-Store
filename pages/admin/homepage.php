@@ -32,7 +32,7 @@ $fields=[
 'view_all'=>['View all link','General view-all link text'],
 ];
 $vals=[]; $q=$pdo->query("SELECT setting_key,setting_value FROM site_settings WHERE setting_key LIKE 'home_%'"); foreach($q as $r)$vals[$r['setting_key']]=$r['setting_value'];
-$pageTitle='Homepage Editor'; $activePage='admin'; $adminActivePage='homepage'; $extraCss='<link rel="stylesheet" href="'.APP_URL.'/assets/css/admin.css">'; $adminPageTitle=$pageTitle; $adminPageSubtitle='Super Admin — control the public homepage content'; require __DIR__.'/../../includes/header.php';
+$pageTitle='Homepage Editor'; $activePage='admin'; $adminActivePage='homepage'; $extraCss='<link rel="stylesheet" href="'.asset_url('assets/css/admin.css').'">'; $adminPageTitle=$pageTitle; $adminPageSubtitle='Super Admin — control the public homepage content'; require __DIR__.'/../../includes/header.php';
 ?>
 <div class="a-shell" id="aShell">
 <?php require __DIR__.'/../../includes/admin_sidebar.php'; ?><div class="a-main"><?php require __DIR__.'/../../includes/admin_topbar.php'; ?><div class="a-content">

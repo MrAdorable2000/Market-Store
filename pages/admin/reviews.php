@@ -62,7 +62,7 @@ function admin_stars(int $rating): string
 $pageTitle         = t('admin.nav_reviews');
 $activePage        = 'admin';
 $adminActivePage   = 'reviews';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_reviews');
 $adminPageSubtitle = t('admin.reviews_sub');
 require_once __DIR__ . '/../../includes/header.php';

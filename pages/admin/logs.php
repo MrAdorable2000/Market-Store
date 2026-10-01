@@ -124,7 +124,7 @@ function admin_module_label(string $m): string
 $pageTitle         = t('admin.nav_logs');
 $activePage        = 'admin';
 $adminActivePage   = 'logs';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_logs');
 $adminPageSubtitle = t('admin.logs_sub');
 require_once __DIR__ . '/../../includes/header.php';

@@ -30,7 +30,7 @@ foreach ($pdo->query('SELECT setting_key, setting_value, description FROM site_s
 $pageTitle         = t('admin.nav_settings');
 $activePage        = 'admin';
 $adminActivePage   = 'settings';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_settings');
 $adminPageSubtitle = t('admin.settings_sub');
 require_once __DIR__ . '/../../includes/header.php';

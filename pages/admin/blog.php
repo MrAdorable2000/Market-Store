@@ -52,7 +52,7 @@ $editId=(int)($_GET['edit']??0);$edit=null;if($editId){$st=$pdo->prepare('SELECT
 $posts=$pdo->query('SELECT p.*,u.full_name author_name FROM blog_posts p LEFT JOIN users u ON u.id=p.author_id ORDER BY p.created_at DESC')->fetchAll();
 $published=(int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status='published'")->fetchColumn();
 $drafts=(int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status='draft'")->fetchColumn();
-$pageTitle='Blog Management';$adminActivePage='blog';$extraCss='<link rel="stylesheet" href="'.APP_URL.'/assets/css/admin.css">';$adminPageTitle='Blog Management';$adminPageSubtitle='Create polished marketplace guides, stories and updates.';
+$pageTitle='Blog Management';$adminActivePage='blog';$extraCss='<link rel="stylesheet" href="'.asset_url('assets/css/admin.css').'">';$adminPageTitle='Blog Management';$adminPageSubtitle='Create polished marketplace guides, stories and updates.';
 require_once __DIR__.'/../../includes/header.php';
 ?>
 <div class="a-shell" id="aShell"><?php require __DIR__.'/../../includes/admin_sidebar.php';?><div class="a-main"><?php require __DIR__.'/../../includes/admin_topbar.php';?><div class="a-content">

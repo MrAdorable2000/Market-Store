@@ -89,10 +89,81 @@
         </div>
     </footer>
 
+    <!-- PWA install control. It only appears when the browser confirms the app can be installed. -->
+    <button id="pwaInstallButton" class="pwa-install" type="button" hidden aria-label="Install Isoko Ryacu app">
+        <img class="pwa-install__icon" src="<?php echo e(logo_asset('pwa-192.png')); ?>" alt="">
+        <span>Install Isoko Ryacu</span>
+        <span class="pwa-install__close" aria-hidden="true">×</span>
+    </button>
+
     <!-- Scripts -->
-    <script src="<?php echo APP_URL; ?>/assets/js/main.js" defer></script>
-    <script src="<?php echo APP_URL; ?>/assets/js/confirm-modal.js" defer></script>
-    <script src="<?php echo APP_URL; ?>/assets/js/search.js" defer></script>
-    <script src="<?php echo APP_URL; ?>/assets/js/favorites.js" defer></script>
+    <script src="<?php echo e(asset_url('assets/js/main.js')); ?>" defer></script>
+    <script src="<?php echo e(asset_url('assets/js/confirm-modal.js')); ?>" defer></script>
+    <script src="<?php echo e(asset_url('assets/js/search.js')); ?>" defer></script>
+    <script src="<?php echo e(asset_url('assets/js/favorites.js')); ?>" defer></script>
+
+    <script>
+    // Progressive Web App: registration + install prompt + update handling.
+    (function () {
+        var installButton = document.getElementById('pwaInstallButton');
+        var deferredPrompt = null;
+        var appInstalled = false;
+
+        function showInstallButton() {
+            if (!installButton || appInstalled) return;
+            installButton.hidden = false;
+            requestAnimationFrame(function () { installButton.classList.add('is-visible'); });
+        }
+
+        function hideInstallButton() {
+            if (!installButton) return;
+            installButton.classList.remove('is-visible');
+            setTimeout(function () { installButton.hidden = true; }, 220);
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('<?php echo APP_URL; ?>/service-worker.js', {
+                    scope: '<?php echo APP_URL; ?>/'
+                }).then(function (registration) {
+                    // Ask a waiting worker to activate when the user refreshes after an update.
+                    if (registration.waiting) {
+                        registration.waiting.postMessage({type: 'SKIP_WAITING'});
+                    }
+                }).catch(function () {
+                    // PWA support is optional; the marketplace remains fully usable without it.
+                });
+            });
+        }
+
+        window.addEventListener('beforeinstallprompt', function (event) {
+            event.preventDefault();
+            deferredPrompt = event;
+            showInstallButton();
+        });
+
+        window.addEventListener('appinstalled', function () {
+            appInstalled = true;
+            deferredPrompt = null;
+            hideInstallButton();
+        });
+
+        if (installButton) {
+            installButton.addEventListener('click', function () {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.finally(function () {
+                    deferredPrompt = null;
+                    hideInstallButton();
+                });
+            });
+
+            installButton.querySelector('.pwa-install__close').addEventListener('click', function (event) {
+                event.stopPropagation();
+                hideInstallButton();
+            });
+        }
+    })();
+    </script>
 </body>
 </html>

@@ -77,7 +77,7 @@ $keep = array_filter(['q' => $q !== '' ? $q : null, 'filter' => $readF ?: null],
 $pageTitle         = t('admin.nav_messages');
 $activePage        = 'admin';
 $adminActivePage   = 'messages';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_messages');
 $adminPageSubtitle = t('admin.messages_sub');
 require_once __DIR__ . '/../../includes/header.php';

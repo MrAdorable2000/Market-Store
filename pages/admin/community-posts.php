@@ -45,7 +45,7 @@ if($editId){$st=$pdo->prepare('SELECT * FROM community_posts WHERE id=?');$st->e
 $posts=$pdo->query('SELECT p.*,u.full_name creator_name FROM community_posts p LEFT JOIN users u ON u.id=p.created_by ORDER BY p.display_order ASC, COALESCE(p.event_date,p.created_at) ASC, p.created_at DESC')->fetchAll();
 $published=(int)$pdo->query('SELECT COUNT(*) FROM community_posts WHERE is_published=1')->fetchColumn();
 $pageTitle='Events & Announcements'; $activePage='admin'; $adminActivePage='community-posts';
-$extraCss='<link rel="stylesheet" href="'.APP_URL.'/assets/css/admin.css">'; $adminPageTitle='Events & Announcements'; $adminPageSubtitle='Post events, announcements and notices that appear on the Home page.';
+$extraCss='<link rel="stylesheet" href="'.asset_url('assets/css/admin.css').'">'; $adminPageTitle='Events & Announcements'; $adminPageSubtitle='Post events, announcements and notices that appear on the Home page.';
 require_once __DIR__.'/../../includes/header.php';
 ?>
 <div class="a-shell" id="aShell"><?php require __DIR__.'/../../includes/admin_sidebar.php'; ?><div class="a-main"><?php require __DIR__.'/../../includes/admin_topbar.php'; ?><div class="a-content">

@@ -137,3 +137,10 @@ delivery just silently fails and gets logged. See
 `docs/email-sms-delivery-gap.md` for the fix (an HTTP-based transactional
 email API — Resend/Postmark/SendGrid/Mailgun all work well for this) and
 exactly what changes once you have a provider account.
+
+
+## CSS / static asset deployment hardening
+- CSS and JS URLs are generated through `asset_url()` with the app base URL and deployment version.
+- The version query (`?v=1.2.0`) prevents stale CSS after a new Vercel deployment.
+- The service worker is registered from the detected app root and its cache includes the public CSS/JS assets.
+- On Vercel, keep `Dockerfile.vercel` at repository root so the container serves the entire `/app` tree, including `/assets`.

@@ -63,7 +63,7 @@ $keep = array_filter($keep);
 $pageTitle         = t('admin.nav_reports');
 $activePage        = 'admin';
 $adminActivePage   = 'reports';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_reports');
 $adminPageSubtitle = t('admin.reports_sub');
 require_once __DIR__ . '/../../includes/header.php';

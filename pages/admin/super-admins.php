@@ -177,7 +177,7 @@ $eligible = $pdo->query(
 $pageTitle = 'Administrator Management';
 $activePage = 'admin';
 $adminActivePage = 'super-admins';
-$extraCss = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle = 'Administrators & Assistants';
 $adminPageSubtitle = 'Manage admin accounts, appoint assistants, control permissions';
 require_once __DIR__ . '/../../includes/header.php';

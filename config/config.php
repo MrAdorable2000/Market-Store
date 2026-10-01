@@ -17,9 +17,77 @@ define('APP_TAGLINE',    'Discover Anything. Buy. Sell. Rent.');
 // APP_URL is auto-detected from the request so the project works no matter
 // what folder name you use in htdocs (e.g. "isoko-ryacu", "Market-store", etc.).
 // Override by hardcoding a string below if you need a specific URL.
+
+/**
+ * Redirect accidental duplicated project-folder URLs to the canonical path.
+ *
+ * Example:
+ *   /Market-store/Market-store/pages/sell.php
+ * becomes
+ *   /Market-store/pages/sell.php
+ *
+ * This is intentionally limited to repeated adjacent segments followed by
+ * one of the application's known entry areas, so normal nested paths are not
+ * rewritten.
+ */
+function canonical_request_redirect(): void
+{
+    if (PHP_SAPI === 'cli' || empty($_SERVER['REQUEST_URI'])) {
+        return;
+    }
+
+    $requestUri = (string) $_SERVER['REQUEST_URI'];
+    $parts = parse_url($requestUri);
+    $path = $parts['path'] ?? '/';
+    $segments = array_values(array_filter(explode('/', trim($path, '/')), 'strlen'));
+
+    for ($i = 0, $n = count($segments) - 1; $i < $n; $i++) {
+        if (
+            strcasecmp($segments[$i], $segments[$i + 1]) === 0
+            && isset($segments[$i + 2])
+            && in_array(strtolower($segments[$i + 2]), ['pages', 'api', 'assets', 'index.php'], true)
+        ) {
+            array_splice($segments, $i, 1);
+            $canonicalPath = '/' . implode('/', $segments);
+            if ($canonicalPath === '') {
+                $canonicalPath = '/';
+            }
+
+            $query = isset($parts['query']) && $parts['query'] !== ''
+                ? '?' . $parts['query']
+                : '';
+
+            $target = $canonicalPath . $query;
+            if ($target !== $requestUri) {
+                header('Location: ' . $target, true, 301);
+                exit;
+            }
+            break;
+        }
+    }
+}
+
+canonical_request_redirect();
+
 define('APP_URL',        app_url());
 
-define('APP_VERSION',    '1.0.0');
+/**
+ * Return a deployment-safe URL for a public asset.
+ * Uses the detected application base URL, but guarantees exactly one slash
+ * and adds a version query string so browsers/CDNs do not keep an old CSS/JS
+ * file after a deployment.
+ */
+function asset_url(string $path, bool $versioned = true): string
+{
+    $path = ltrim($path, '/');
+    $url = rtrim(APP_URL, '/') . '/' . $path;
+    if ($versioned) {
+        $url .= (str_contains($url, '?') ? '&' : '?') . 'v=' . rawurlencode(APP_VERSION);
+    }
+    return $url;
+}
+
+define('APP_VERSION',    '1.2.0');
 define('APP_TIMEZONE',    'Africa/Kigali');
 
 /**

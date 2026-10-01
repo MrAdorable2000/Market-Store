@@ -34,7 +34,7 @@ $totalMappings = (int) $pdo->query("SELECT COUNT(*) FROM listings WHERE category
 $pageTitle         = t('admin.nav_categories');
 $activePage        = 'admin';
 $adminActivePage   = 'categories';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_categories');
 $adminPageSubtitle = t('admin.categories_sub');
 require_once __DIR__ . '/../../includes/header.php';

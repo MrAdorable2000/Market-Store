@@ -53,6 +53,6 @@ $langs    = available_langs();
 </main>
 
 <!-- Admin scripts only — no duplicate JS from the public site -->
-<script src="<?php echo APP_URL; ?>/assets/js/admin.js" defer></script>
+<script src="<?php echo e(asset_url('assets/js/admin.js')); ?>" defer></script>
 </body>
 </html>

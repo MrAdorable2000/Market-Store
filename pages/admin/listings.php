@@ -115,7 +115,7 @@ $qs = static function (array $extra = []) use ($baseUrl, $keep): string {
 $pageTitle         = t('admin.nav_listings');
 $activePage        = 'admin';
 $adminActivePage   = 'listings';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = t('admin.nav_listings');
 $adminPageSubtitle = t('admin.listings_sub');
 require_once __DIR__ . '/../../includes/header.php';

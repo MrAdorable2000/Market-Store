@@ -30,6 +30,13 @@ $currentUser     = current_user();
     <meta name="theme-color" content="#0ea5a4">
     <meta name="description" content="<?php echo e($pageDescription); ?>">
     <meta name="generator" content="<?php echo e(APP_NAME . ' ' . APP_VERSION); ?>">
+    <!-- Progressive Web App: installable on Android/iPhone browsers -->
+    <link rel="manifest" href="<?php echo e(asset_url('manifest.webmanifest', false)); ?>">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="<?php echo e(APP_NAME); ?>">
+
     <!-- CSRF token for AJAX (favorites, reports, rental requests) -->
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <!-- Logged-in flag so JS can require auth before AJAX calls -->
@@ -57,8 +64,8 @@ $currentUser     = current_user();
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css">
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/components.css">
+    <link rel="stylesheet" href="<?php echo e(asset_url('assets/css/style.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset_url('assets/css/components.css')); ?>">
     <?php if (!empty($extraCss)) echo $extraCss; ?>
 
     <!-- Inline early theme (prevents flash of wrong theme) -->

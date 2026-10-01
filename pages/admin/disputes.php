@@ -63,7 +63,7 @@ $keep = array_filter(['status' => $statusFilter ?: null]);
 $pageTitle         = 'Disputes';
 $activePage        = 'admin';
 $adminActivePage   = 'disputes';
-$extraCss          = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss          = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle    = 'Disputes';
 $adminPageSubtitle = 'Resolve buyer-opened disputes and release or refund held funds.';
 require_once __DIR__ . '/../../includes/header.php';

@@ -88,7 +88,7 @@ try {
 $pageTitle = 'Super Admin Dashboard';
 $activePage = 'admin';
 $adminActivePage = 'dashboard';
-$extraCss = '<link rel="stylesheet" href="' . APP_URL . '/assets/css/admin.css">';
+$extraCss = '<link rel="stylesheet" href="' . asset_url('assets/css/admin.css') . '">';
 $adminPageTitle = 'Super Admin Control Center';
 $adminPageSubtitle = 'Full marketplace overview with real-time data';
 require_once __DIR__ . '/../../includes/header.php';

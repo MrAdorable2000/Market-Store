@@ -383,5 +383,5 @@ require_once __DIR__ . '/../includes/header.php';
     });
 })();
 </script>
-<script src="<?php echo APP_URL; ?>/assets/js/auth.js" defer></script>
+<script src="<?php echo e(asset_url('assets/js/auth.js')); ?>" defer></script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
